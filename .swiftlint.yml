@@ -1,0 +1,10 @@
+excluded:
+    - build
+
+disabled_rules:
+    - trailing_comma
+
+line_length: 160
+
+identifier_name:
+    min_length: 1

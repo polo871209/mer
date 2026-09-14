@@ -1,0 +1,35 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "credential-file"
+description = "Signing certificate, private key, provisioning profile, or environment file"
+path = '''(?i)(\.(p8|p12|pfx|pem|key|cer|der|jks|keystore|mobileprovision|provisionprofile|keychain|keychain-db)$|(^|/)\.env(\.[^/]*)?$)'''
+
+[[rules]]
+id = "money-data-file"
+description = "Exported entries, spreadsheet, or database file"
+path = '''(?i)\.(csv|tsv|xls|xlsx|numbers|ofx|qif|qfx|sqlite|sqlite3|db|store)$'''
+
+[[rules]]
+id = "xcode-user-data"
+description = "Xcode per-user data, which names the local account"
+path = '''(^|/)xcuserdata/'''
+
+[[rules]]
+id = "home-directory-path"
+description = "Absolute path that names a local user account"
+regex = '''(/Users|/home)/[A-Za-z0-9._-]+/'''
+
+[[rules]]
+id = "email-address"
+description = "Email address"
+regex = '''[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}'''
+
+[[rules.allowlists]]
+regexes = ['''^qazh0123@gmail\.com$''', '''@users\.noreply\.github\.com$''', '''^git@github\.com$''']
+
+[[rules]]
+id = "phone-number"
+description = "International phone number"
+regex = '''\+\d{1,3}[ .-]?\(?\d{1,4}\)?[ .-]?\d{3,4}[ .-]?\d{3,4}\b'''

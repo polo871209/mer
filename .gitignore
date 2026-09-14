@@ -1,0 +1,16 @@
+.DS_Store
+build/
+DerivedData/
+.pi/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+.swiftpm/
+buildServer.json
+*.csv
+*.p8
+*.p12
+*.mobileprovision
+*.provisionprofile
+.env*
