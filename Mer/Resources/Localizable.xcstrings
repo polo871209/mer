@@ -1,0 +1,285 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@" : {
+
+    },
+    "Add button" : {
+
+    },
+    "Add Category" : {
+
+    },
+    "Add Entry" : {
+
+    },
+    "Add note" : {
+
+    },
+    "Amount" : {
+
+    },
+    "Bills" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Categories" : {
+
+    },
+    "Category" : {
+
+    },
+    "Clear Search" : {
+
+    },
+    "Close" : {
+
+    },
+    "Crayon" : {
+
+    },
+    "Currency" : {
+
+    },
+    "Data" : {
+
+    },
+    "Day" : {
+
+    },
+    "Day by day" : {
+
+    },
+    "Decimal point" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Deleting a category keeps its entries. They show as Uncategorized." : {
+
+    },
+    "Divided by" : {
+
+    },
+    "Done" : {
+
+    },
+    "Edit Category" : {
+
+    },
+    "Edit Entry" : {
+
+    },
+    "Entries" : {
+
+    },
+    "Expense" : {
+
+    },
+    "Export CSV" : {
+
+    },
+    "Food" : {
+
+    },
+    "Fun" : {
+
+    },
+    "Gift" : {
+
+    },
+    "Groceries" : {
+
+    },
+    "Health" : {
+
+    },
+    "Home" : {
+
+    },
+    "How much did you spend?" : {
+
+    },
+    "Income" : {
+
+    },
+    "Investment" : {
+
+    },
+    "Layout" : {
+
+    },
+    "Left" : {
+
+    },
+    "Lock with Face ID" : {
+
+    },
+    "Log ${amount} for ${category}" : {
+
+    },
+    "Log Expense" : {
+
+    },
+    "Logged %@. Mer wrote it down." : {
+
+    },
+    "Looking good. Mer approves." : {
+
+    },
+    "Mer" : {
+
+    },
+    "Mer covers your numbers in the app switcher and asks for Face ID when you come back." : {
+
+    },
+    "Mer entries.csv" : {
+
+    },
+    "Mer is guarding your money" : {
+
+    },
+    "Mer looked everywhere, even in the bowl." : {
+
+    },
+    "Mer the cat" : {
+
+    },
+    "Minus" : {
+
+    },
+    "Money" : {
+
+    },
+    "More out than in. Mer says treats cost money too." : {
+
+    },
+    "Name" : {
+
+    },
+    "New Category" : {
+
+    },
+    "New Entry" : {
+
+    },
+    "Next Month" : {
+
+    },
+    "No entries" : {
+
+    },
+    "No matches" : {
+
+    },
+    "Note" : {
+
+    },
+    "Note or category" : {
+
+    },
+    "Nothing logged on this day." : {
+
+    },
+    "Nothing logged yet. Mer is waiting in the bowl." : {
+
+    },
+    "Other" : {
+
+    },
+    "Other Income" : {
+
+    },
+    "Plus" : {
+
+    },
+    "Previous Month" : {
+
+    },
+    "Privacy" : {
+
+    },
+    "Put the + button on the side your thumb reaches." : {
+
+    },
+    "Recent" : {
+
+    },
+    "Right" : {
+
+    },
+    "Salary" : {
+
+    },
+    "Save" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Shopping" : {
+
+    },
+    "Side Gig" : {
+
+    },
+    "Spent" : {
+
+    },
+    "Spent this month" : {
+
+    },
+    "Spent This Month" : {
+
+    },
+    "Sport" : {
+
+    },
+    "Symbol" : {
+
+    },
+    "Tap + to log money in or out for this month." : {
+
+    },
+    "Tap + to log your first entry." : {
+
+    },
+    "Tells you how much you spent this month." : {
+
+    },
+    "Times" : {
+
+    },
+    "Transport" : {
+
+    },
+    "Travel" : {
+
+    },
+    "Type" : {
+
+    },
+    "Uncategorized" : {
+
+    },
+    "Unlock" : {
+
+    },
+    "Unlock your money notes." : {
+
+    },
+    "Writes an expense into Mer without opening the app." : {
+
+    },
+    "You spent %@ this month." : {
+
+    },
+    "Your money, counted by a cat." : {
+
+    }
+  },
+  "version" : "1.0"
+}
