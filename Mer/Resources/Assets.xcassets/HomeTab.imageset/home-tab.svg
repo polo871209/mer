@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26">
+<g transform="rotate(-6 13 13)">
+<path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4.6 11.2 C3.9 8.6 4.3 5.9 5.4 3.6 C7.2 4.4 8.8 5.6 10.1 7.0 Q13.0 6.1 15.9 6.8 C17.2 5.4 18.8 4.2 20.7 3.4 C21.8 5.8 22.1 8.4 21.6 11.0 C23.0 12.8 23.5 15.2 23.0 17.4 L23.6 18.4 L22.4 18.9 C21.0 21.9 17.4 23.3 13.1 23.3 C8.7 23.3 5.1 21.9 3.7 19.0 L2.5 18.6 L3.1 17.6 C2.6 15.2 3.1 12.9 4.9 10.9"/>
+<path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.47 13.27 Q11.71 14.20 11.39 15.06 Q11.07 15.91 10.32 16.42 Q9.56 16.92 8.68 16.72 Q7.81 16.52 7.25 15.82 Q6.69 15.11 6.64 14.18 Q6.59 13.25 7.14 12.45 Q7.68 11.65 8.63 11.50 Q9.59 11.34 10.41 11.84 Q11.23 12.34 11.47 13.27 Q11.71 14.20 11.28 15.37"/>
+<path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.79 16.61 Q15.80 16.52 15.11 15.79 Q14.42 15.07 14.37 14.07 Q14.32 13.08 14.78 12.16 Q15.25 11.25 16.23 11.12 Q17.22 10.99 18.13 11.32 Q19.04 11.66 19.53 12.58 Q20.03 13.50 19.65 14.46 Q19.27 15.42 18.52 16.06 Q17.78 16.71 16.79 16.61 Q15.80 16.52 14.86 15.53"/>
+<circle fill="#000" cx="10.1" cy="14.7" r="1.3"/>
+<circle fill="#000" cx="18.0" cy="13.0" r="1.3"/>
+<path fill="#000" d="M12.2 17.6 Q13.1 17.3 14.0 17.6 Q13.6 18.5 13.1 18.6 Q12.6 18.5 12.2 17.6 Z" stroke="#000" stroke-width="0.6" stroke-linejoin="round"/>
+<path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M11.4 19.3 Q12.3 20.1 13.1 19.0 Q13.9 20.1 14.8 19.3"/>
+<path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.1" d="M12.7 19.8 Q12.8 21.3 13.6 21.2 Q14.2 21.0 14.1 19.7"/>
+<path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.1" d="M2.5 15.4 L0.9 14.9 M2.4 17.0 L0.8 17.4 M23.7 15.2 L25.0 14.9 M23.7 16.9 L25.0 17.2"/>
+</g>
+</svg>
