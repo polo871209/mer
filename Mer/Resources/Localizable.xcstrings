@@ -4,6 +4,12 @@
     "%@" : {
 
     },
+    "Accounts" : {
+
+    },
+    "Add Account" : {
+
+    },
     "Add button" : {
 
     },
@@ -19,10 +25,22 @@
     "Amount" : {
 
     },
-    "Bills" : {
+    "Amount, category, or note" : {
 
     },
-    "Cancel" : {
+    "Average spent per day" : {
+
+    },
+    "Average spent per month" : {
+
+    },
+    "Balance" : {
+
+    },
+    "Balances" : {
+
+    },
+    "Bills" : {
 
     },
     "Categories" : {
@@ -31,10 +49,10 @@
     "Category" : {
 
     },
-    "Clear Search" : {
+    "Change Currency" : {
 
     },
-    "Close" : {
+    "Clear" : {
 
     },
     "Crayon" : {
@@ -44,6 +62,9 @@
 
     },
     "Data" : {
+
+    },
+    "Date" : {
 
     },
     "Day" : {
@@ -56,6 +77,18 @@
 
     },
     "Delete" : {
+
+    },
+    "Delete Category" : {
+
+    },
+    "Delete Entry" : {
+
+    },
+    "Delete this category?" : {
+
+    },
+    "Delete this entry?" : {
 
     },
     "Deleting a category keeps its entries. They show as Uncategorized." : {
@@ -94,10 +127,16 @@
     "Groceries" : {
 
     },
+    "Has entries" : {
+
+    },
     "Health" : {
 
     },
     "Home" : {
+
+    },
+    "Home and Report show the main account. Money in a currency without its own account converts into the main account." : {
 
     },
     "How much did you spend?" : {
@@ -107,6 +146,9 @@
 
     },
     "Investment" : {
+
+    },
+    "It's Mer's money. You just carry it." : {
 
     },
     "Layout" : {
@@ -124,10 +166,16 @@
     "Log Expense" : {
 
     },
+    "Log some money in or out to see the trend." : {
+
+    },
     "Logged %@. Mer wrote it down." : {
 
     },
     "Looking good. Mer approves." : {
+
+    },
+    "Main account" : {
 
     },
     "Mer" : {
@@ -137,6 +185,9 @@
 
     },
     "Mer entries.csv" : {
+
+    },
+    "Mer found no expenses in this period." : {
 
     },
     "Mer is guarding your money" : {
@@ -154,10 +205,19 @@
     "Money" : {
 
     },
+    "Month" : {
+
+    },
+    "Month by month" : {
+
+    },
     "More out than in. Mer says treats cost money too." : {
 
     },
     "Name" : {
+
+    },
+    "Name or code" : {
 
     },
     "New Category" : {
@@ -169,19 +229,25 @@
     "Next Month" : {
 
     },
+    "Next Year" : {
+
+    },
     "No entries" : {
+
+    },
+    "No exchange rate yet. Connect to the internet to convert into %@." : {
 
     },
     "No matches" : {
 
     },
+    "No spending" : {
+
+    },
     "Note" : {
 
     },
-    "Note or category" : {
-
-    },
-    "Nothing logged on this day." : {
+    "Nothing logged here." : {
 
     },
     "Nothing logged yet. Mer is waiting in the bowl." : {
@@ -190,13 +256,22 @@
     "Other" : {
 
     },
+    "Other currencies" : {
+
+    },
     "Other Income" : {
+
+    },
+    "Period" : {
 
     },
     "Plus" : {
 
     },
     "Previous Month" : {
+
+    },
+    "Previous Year" : {
 
     },
     "Privacy" : {
@@ -208,6 +283,15 @@
     "Recent" : {
 
     },
+    "Remove" : {
+
+    },
+    "Removed" : {
+
+    },
+    "Report" : {
+
+    },
     "Right" : {
 
     },
@@ -217,10 +301,19 @@
     "Save" : {
 
     },
+    "See All" : {
+
+    },
     "Settings" : {
 
     },
     "Shopping" : {
+
+    },
+    "Show Whole Month" : {
+
+    },
+    "Shows a calendar" : {
 
     },
     "Side Gig" : {
@@ -253,10 +346,19 @@
     "Times" : {
 
     },
+    "Today" : {
+
+    },
+    "Tomorrow" : {
+
+    },
     "Transport" : {
 
     },
     "Travel" : {
+
+    },
+    "Trend" : {
 
     },
     "Type" : {
@@ -274,10 +376,16 @@
     "Writes an expense into Mer without opening the app." : {
 
     },
-    "You spent %@ this month." : {
+    "Year" : {
 
     },
-    "Your money, counted by a cat." : {
+    "Year by year" : {
+
+    },
+    "Yesterday" : {
+
+    },
+    "You spent %@ this month." : {
 
     }
   },

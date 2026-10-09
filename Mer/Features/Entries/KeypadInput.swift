@@ -14,9 +14,7 @@ nonisolated enum KeypadKey: Hashable {
 }
 
 nonisolated enum KeypadInput {
-    static let maxIntegerDigits = 9
-
-    static func apply(_ key: KeypadKey, to text: String) -> String {
+    static func apply(_ key: KeypadKey, to text: String, fractionDigits: Int) -> String {
         let number = currentNumber(text)
         switch key {
         case .delete:
@@ -25,19 +23,19 @@ nonisolated enum KeypadInput {
             guard let last = text.last else { return text }
             return (isOperator(last) ? String(text.dropLast()) : text) + String(op.rawValue)
         case .dot:
-            if number.contains(".") { return text }
+            if fractionDigits == 0 || number.contains(".") { return text }
             return number.isEmpty ? text + "0." : text + "."
         case .digit(let digit):
             if let dot = number.firstIndex(of: ".") {
-                return number[number.index(after: dot)...].count >= 2 ? text : text + String(digit)
+                return number[number.index(after: dot)...].count >= fractionDigits ? text : text + String(digit)
             }
             if number == "0" { return String(text.dropLast()) + String(digit) }
-            return number.count >= maxIntegerDigits ? text : text + String(digit)
+            return number.count >= 9 ? text : text + String(digit)
         }
     }
 
-    static func amount(_ text: String) -> Decimal? {
-        guard let value = evaluate(text)?.rounded(scale: 2), value > 0 else { return nil }
+    static func amount(_ text: String, fractionDigits: Int) -> Decimal? {
+        guard let value = evaluate(text)?.rounded(scale: fractionDigits), value > 0 else { return nil }
         return value
     }
 
@@ -76,11 +74,11 @@ nonisolated enum KeypadInput {
         text.contains(where: isOperator)
     }
 
-    static func display(_ text: String, locale: Locale = .current) -> String {
+    static func display(_ text: String) -> String {
         guard !text.isEmpty else { return "0" }
         return tokens(text).map { token in
             switch token {
-            case .number(let string): formatNumber(string, locale: locale)
+            case .number(let string): formatNumber(string)
             case .op(let op): " \(op.rawValue) "
             }
         }
@@ -118,10 +116,10 @@ nonisolated enum KeypadInput {
         return text[text.index(after: last)...]
     }
 
-    private static func formatNumber(_ text: String, locale: Locale) -> String {
+    private static func formatNumber(_ text: String) -> String {
         let parts = text.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
-        let whole = Int(parts[0]).map { $0.formatted(.number.locale(locale)) } ?? String(parts[0])
+        let whole = Int(parts[0]).map { $0.formatted(.number) } ?? String(parts[0])
         guard parts.count == 2 else { return whole }
-        return whole + (locale.decimalSeparator ?? ".") + parts[1]
+        return whole + (Locale.current.decimalSeparator ?? ".") + parts[1]
     }
 }

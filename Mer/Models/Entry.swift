@@ -16,14 +16,20 @@ nonisolated enum EntryKind: String, CaseIterable, Identifiable {
 
 @Model
 final class Entry {
+    /// The amount taken from or added to the account, in the account's currency.
     var amount: Decimal = 0
+    var accountCode: String = ""
+    /// Set only when the entry was typed in another currency and converted into the account's currency.
+    var originalAmount: Decimal?
+    var originalCode: String?
     var kindRaw: String = EntryKind.expense.rawValue
     var note: String = ""
     var date: Date = Date.now
     var category: EntryCategory?
 
-    init(amount: Decimal, kind: EntryKind, date: Date = .now, note: String = "") {
+    init(amount: Decimal, accountCode: String, kind: EntryKind, date: Date = .now, note: String = "") {
         self.amount = amount
+        self.accountCode = accountCode
         self.kindRaw = kind.rawValue
         self.date = date
         self.note = note
@@ -36,8 +42,11 @@ final class Entry {
 
     var signedAmount: Decimal { kind == .income ? amount : -amount }
 
+    var typedAmount: Decimal { originalAmount ?? amount }
+    var typedCode: String { originalCode ?? accountCode }
+
     var title: String {
-        note.isEmpty ? (category?.name ?? String(localized: "Uncategorized")) : note
+        note.isEmpty ? category.displayName : note
     }
 }
 
@@ -73,4 +82,10 @@ final class EntryCategory {
         get { Crayon(rawValue: crayonRaw) ?? .butter }
         set { crayonRaw = newValue.rawValue }
     }
+}
+
+nonisolated extension EntryCategory? {
+    var displayName: String { self?.name ?? String(localized: "Uncategorized") }
+    var displaySymbol: String { self?.symbol ?? "questionmark" }
+    var displayCrayon: Crayon { self?.crayon ?? .cocoa }
 }

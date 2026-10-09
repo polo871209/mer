@@ -5,7 +5,7 @@ struct CategoriesView: View {
     @Query(sort: \EntryCategory.sortOrder) private var categories: [EntryCategory]
     @Environment(\.modelContext) private var context
     @State private var editing: EntryCategory?
-    @State private var isAdding = false
+    @State private var addingKind: EntryKind?
 
     var body: some View {
         List {
@@ -20,46 +20,49 @@ struct CategoriesView: View {
                                 CategoryBadge(symbol: category.symbol, crayon: category.crayon, size: 34)
                                 Text(category.name).foregroundStyle(Palette.ink)
                                 Spacer()
-                                Text(category.entries?.count ?? 0, format: .number)
+                                Text(entryCount(category), format: .number)
                                     .foregroundStyle(Palette.pencil)
                             }
                         }
-                    }
-                    .onDelete { offsets in
-                        for index in offsets { context.delete(items[index]) }
+                        .swipeToDelete { context.delete(category) }
                     }
                     .onMove { source, destination in
                         var reordered = items
                         reordered.move(fromOffsets: source, toOffset: destination)
                         for (index, category) in reordered.enumerated() { category.sortOrder = index }
                     }
+                    Button("Add Category", systemImage: "plus") { addingKind = kind }
                 } header: {
                     Text(kind.title)
                 } footer: {
                     if kind == .income {
-                        Text("Deleting a category keeps its entries. They show as Uncategorized.")
+                        Text(Self.deletionNote)
                     }
                 }
             }
         }
-        .scrollContentBackground(.hidden)
-        .background { PaperBackground() }
+        .paperBackground()
         .navigationTitle("Categories")
         .toolbar {
             ToolbarItem(placement: .primaryAction) { EditButton() }
-            ToolbarItem(placement: .primaryAction) {
-                Button("Add Category", systemImage: "plus") { isAdding = true }
-            }
         }
-        .sheet(isPresented: $isAdding) { CategoryEditor(category: nil, nextSortOrder: categories.count) }
-        .sheet(item: $editing) { CategoryEditor(category: $0, nextSortOrder: categories.count) }
+        .sheet(item: $addingKind) { CategoryEditor(category: nil, kind: $0, nextSortOrder: nextSortOrder) }
+        .sheet(item: $editing) { CategoryEditor(category: $0, kind: $0.kind, nextSortOrder: nextSortOrder) }
+    }
+
+    static let deletionNote: LocalizedStringKey = "Deleting a category keeps its entries. They show as Uncategorized."
+
+    private var nextSortOrder: Int { (categories.map(\.sortOrder).max() ?? -1) + 1 }
+
+    private func entryCount(_ category: EntryCategory) -> Int {
+        let id = category.uuid
+        return (try? context.fetchCount(FetchDescriptor<Entry>(predicate: #Predicate { $0.category?.uuid == id }))) ?? 0
     }
 }
 
 private struct CategoryEditor: View {
     private let category: EntryCategory?
     private let nextSortOrder: Int
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @State private var name: String
     @State private var symbol: String
@@ -73,13 +76,13 @@ private struct CategoryEditor: View {
         "heart", "tshirt", "scissors", "wrench.and.screwdriver", "banknote", "briefcase", "creditcard", "chart.line.uptrend.xyaxis", "sparkles",
     ]
 
-    init(category: EntryCategory?, nextSortOrder: Int) {
+    init(category: EntryCategory?, kind: EntryKind, nextSortOrder: Int) {
         self.category = category
         self.nextSortOrder = nextSortOrder
         _name = State(initialValue: category?.name ?? "")
         _symbol = State(initialValue: category?.symbol ?? "sparkles")
         _crayon = State(initialValue: category?.crayon ?? .butter)
-        _kind = State(initialValue: category?.kind ?? .expense)
+        _kind = State(initialValue: kind)
     }
 
     var body: some View {
@@ -99,6 +102,7 @@ private struct CategoryEditor: View {
                         Picker("Type", selection: $kind) {
                             ForEach(EntryKind.allCases) { Text($0.title).tag($0) }
                         }
+                        .pickerStyle(.segmented)
                     }
                 }
                 Section("Crayon") {
@@ -135,7 +139,6 @@ private struct CategoryEditor: View {
                                     }
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel(option)
                             .accessibilityAddTraits(option == symbol ? .isSelected : [])
                         }
                     }
@@ -143,34 +146,35 @@ private struct CategoryEditor: View {
                 }
             }
             .foregroundStyle(Palette.ink)
-            .scrollContentBackground(.hidden)
-            .background { PaperBackground() }
+            .paperBackground()
             .navigationTitle(category == nil ? "New Category" : "Edit Category")
             .navigationBarTitleDisplayMode(.inline)
             .sensoryFeedback(.selection, trigger: symbol)
             .sensoryFeedback(.selection, trigger: crayon)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark", role: .cancel) { dismiss() }
+            .editorToolbar(
+                canSave: !trimmedName.isEmpty,
+                save: save,
+                deletion: category.map { category in
+                    EditorDeletion(
+                        question: "Delete this category?",
+                        confirmTitle: "Delete Category",
+                        message: CategoriesView.deletionNote
+                    ) { context.delete(category) }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark", role: .confirm) { save() }
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            )
         }
     }
 
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+
     private func save() {
-        let trimmed = name.trimmingCharacters(in: .whitespaces)
         if let category {
-            category.name = trimmed
+            category.name = trimmedName
             category.symbol = symbol
             category.crayon = crayon
         } else {
-            context.insert(EntryCategory(name: trimmed, symbol: symbol, crayon: crayon, kind: kind, sortOrder: nextSortOrder))
+            context.insert(EntryCategory(name: trimmedName, symbol: symbol, crayon: crayon, kind: kind, sortOrder: nextSortOrder))
         }
-        dismiss()
     }
 }
 

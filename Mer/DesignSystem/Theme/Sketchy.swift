@@ -86,7 +86,7 @@ nonisolated struct SketchyEllipse: Shape {
     }
 }
 
-nonisolated struct Hatch: Shape {
+private nonisolated struct Hatch: Shape {
     var spacing: CGFloat = 5
     var seed: UInt64 = 3
 
@@ -124,14 +124,22 @@ struct SketchyBackground: View {
     var cornerRadius: CGFloat = 18
 
     var body: some View {
-        ZStack {
-            SketchyRect(cornerRadius: cornerRadius, seed: seed).fill(fill)
-            SketchyRect(cornerRadius: cornerRadius, seed: seed)
-                .stroke(Palette.ink, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-            SketchyRect(cornerRadius: cornerRadius, wobble: 2.4, seed: seed &+ 11)
-                .stroke(Palette.ink.opacity(0.3), style: StrokeStyle(lineWidth: 1, lineCap: .round))
+        Canvas { context, size in
+            let rect = CGRect(origin: .zero, size: size).insetBy(dx: Self.bleed, dy: Self.bleed)
+            let outline = SketchyRect(cornerRadius: cornerRadius, seed: seed).path(in: rect)
+            context.fill(outline, with: .color(fill))
+            context.stroke(outline, with: .color(Palette.ink), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            context.stroke(
+                SketchyRect(cornerRadius: cornerRadius, wobble: 2.4, seed: seed &+ 11).path(in: rect),
+                with: .color(Palette.ink.opacity(0.3)),
+                style: StrokeStyle(lineWidth: 1, lineCap: .round)
+            )
         }
+        .padding(-Self.bleed)
     }
+
+    // Canvas clips to its bounds, and the wobbly strokes reach a few points outside the card.
+    private static let bleed: CGFloat = 4
 }
 
 struct PaperBackground: View {
@@ -143,6 +151,11 @@ struct PaperBackground: View {
 }
 
 extension View {
+    /// The background of every screen and sheet. It also hides the system background of a `List` or `Form`, so the paper shows through.
+    func paperBackground() -> some View {
+        scrollContentBackground(.hidden).background { PaperBackground() }
+    }
+
     func sketchyCard(fill: Color = Palette.card, seed: UInt64 = 1, padding: CGFloat = 16) -> some View {
         self.padding(padding).background { SketchyBackground(fill: fill, seed: seed) }
     }
@@ -157,7 +170,7 @@ nonisolated extension CGPoint {
         hypot(other.x - x, other.y - y)
     }
 
-    fileprivate func nudged(_ rng: inout SeededRandom, _ amount: CGFloat) -> CGPoint {
+    func nudged(_ rng: inout SeededRandom, _ amount: CGFloat) -> CGPoint {
         CGPoint(x: x + rng.jitter(amount), y: y + rng.jitter(amount))
     }
 }

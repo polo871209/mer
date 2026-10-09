@@ -1,11 +1,6 @@
 import LocalAuthentication
 import SwiftUI
-
-enum AppLock {
-    static var canAuthenticate: Bool {
-        LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
-    }
-}
+import UIKit
 
 struct AppLockModifier: ViewModifier {
     @AppStorage(DefaultsKey.lockEnabled) private var lockEnabled = false
@@ -15,13 +10,12 @@ struct AppLockModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay {
-                if lockEnabled && (isLocked || scenePhase != .active) {
-                    LockScreen(isLocked: isLocked) { Task { await unlock() } }
-                        .transition(.opacity)
-                }
+            .background {
+                LockCover(
+                    isCovered: lockEnabled && (isLocked || scenePhase != .active),
+                    screen: LockScreen(isLocked: isLocked) { Task { await unlock() } }
+                )
             }
-            .animation(.easeInOut(duration: 0.2), value: isLocked)
             .task {
                 if isLocked { await unlock() }
             }
@@ -46,6 +40,59 @@ struct AppLockModifier: ViewModifier {
         let reason = String(localized: "Unlock your money notes.")
         if (try? await LAContext().evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true {
             isLocked = false
+        }
+    }
+}
+
+// The lock screen gets its own window, because sheets present above any overlay in the app's window.
+private struct LockCover: UIViewRepresentable {
+    let isCovered: Bool
+    let screen: LockScreen
+
+    func makeUIView(context: Context) -> CoverAnchor { CoverAnchor() }
+
+    func updateUIView(_ anchor: CoverAnchor, context: Context) {
+        anchor.screen = screen
+        anchor.isCovered = isCovered
+    }
+}
+
+private final class CoverAnchor: UIView {
+    private var cover: UIWindow?
+    private var host: UIHostingController<LockScreen>?
+
+    var screen: LockScreen? {
+        didSet { if let screen { host?.rootView = screen } }
+    }
+
+    var isCovered = false {
+        didSet { sync() }
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        sync()
+    }
+
+    private func sync() {
+        if isCovered, cover == nil, let screen, let scene = window?.windowScene {
+            let host = UIHostingController(rootView: screen)
+            host.view.accessibilityViewIsModal = true
+            let cover = UIWindow(windowScene: scene)
+            cover.windowLevel = .alert + 1
+            cover.rootViewController = host
+            cover.makeKeyAndVisible()
+            self.cover = cover
+            self.host = host
+        } else if !isCovered, let cover {
+            self.cover = nil
+            host = nil
+            UIView.animate(withDuration: 0.2) {
+                cover.alpha = 0
+            } completion: { _ in
+                cover.isHidden = true
+                self.window?.makeKey()
+            }
         }
     }
 }

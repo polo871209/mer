@@ -1,20 +1,21 @@
 import Foundation
 
-struct CategorySlice: Identifiable {
-    let id: String
+nonisolated struct CategorySlice: Identifiable {
+    /// The category's `uuid`, or `nil` for entries without a category.
+    let id: UUID?
     let name: String
     let symbol: String
     let crayon: Crayon
     let total: Decimal
 }
 
-struct DayTotal: Identifiable {
+nonisolated struct DayTotal: Identifiable {
     let day: Date
     let expense: Decimal
     var id: Date { day }
 }
 
-struct MonthSummary {
+struct PeriodSummary {
     let income: Decimal
     let expense: Decimal
     let slices: [CategorySlice]
@@ -26,7 +27,7 @@ struct MonthSummary {
     init(entries: [Entry], calendar: Calendar = .current) {
         var income = Decimal.zero
         var expense = Decimal.zero
-        var byCategory: [String: CategorySlice] = [:]
+        var byCategory: [UUID?: (category: EntryCategory?, total: Decimal)] = [:]
         var byDay: [Date: Decimal] = [:]
         for entry in entries {
             switch entry.kind {
@@ -34,20 +35,25 @@ struct MonthSummary {
                 income += entry.amount
             case .expense:
                 expense += entry.amount
-                let key = entry.category?.uuid.uuidString ?? "none"
-                byCategory[key] = CategorySlice(
-                    id: key,
-                    name: entry.category?.name ?? String(localized: "Uncategorized"),
-                    symbol: entry.category?.symbol ?? "questionmark",
-                    crayon: entry.category?.crayon ?? .cocoa,
-                    total: (byCategory[key]?.total ?? 0) + entry.amount
-                )
+                let category = entry.category
+                byCategory[category?.uuid, default: (category, 0)].total += entry.amount
                 byDay[calendar.startOfDay(for: entry.date), default: 0] += entry.amount
             }
         }
         self.income = income
         self.expense = expense
-        self.slices = byCategory.values.sorted { $0.total > $1.total }
+        self.slices =
+            byCategory
+            .map { id, value in
+                CategorySlice(
+                    id: id,
+                    name: value.category.displayName,
+                    symbol: value.category.displaySymbol,
+                    crayon: value.category.displayCrayon,
+                    total: value.total
+                )
+            }
+            .sorted { $0.total > $1.total }
         self.days = byDay.map { DayTotal(day: $0.key, expense: $0.value) }.sorted { $0.day < $1.day }
         self.isEmpty = entries.isEmpty
     }
@@ -56,7 +62,7 @@ struct MonthSummary {
 nonisolated enum MerMood: Equatable {
     case waiting, happy, treats
 
-    init(summary: MonthSummary) {
+    init(summary: PeriodSummary) {
         if summary.isEmpty {
             self = .waiting
         } else {
@@ -70,11 +76,5 @@ nonisolated enum MerMood: Equatable {
         case .happy: "Looking good. Mer approves."
         case .treats: "More out than in. Mer says treats cost money too."
         }
-    }
-}
-
-extension Calendar {
-    func monthInterval(containing date: Date) -> DateInterval {
-        dateInterval(of: .month, for: date) ?? DateInterval(start: date, duration: 0)
     }
 }

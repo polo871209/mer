@@ -1,12 +1,12 @@
 import SwiftUI
 
 enum AppTab: CaseIterable {
-    case home, entries, settings
+    case home, report, settings
 
     var title: LocalizedStringKey {
         switch self {
         case .home: "Home"
-        case .entries: "Entries"
+        case .report: "Report"
         case .settings: "Settings"
         }
     }
@@ -14,14 +14,14 @@ enum AppTab: CaseIterable {
     var icon: Image {
         switch self {
         case .home: Image(.homeTab)
-        case .entries: Image(.entriesTab)
+        case .report: Image(.reportTab)
         case .settings: Image(.settingsTab)
         }
     }
 }
 
 struct RootView: View {
-    @AppStorage(DefaultsKey.currencyCode) private var currencyCode = Money.defaultCode
+    @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
     @State private var tab = AppTab.home
     @State private var isAdding = false
 
@@ -31,8 +31,8 @@ struct RootView: View {
             Tab(value: AppTab.home) {
                 DashboardView().toolbarVisibility(.hidden, for: .tabBar)
             }
-            Tab(value: AppTab.entries) {
-                EntriesView().toolbarVisibility(.hidden, for: .tabBar)
+            Tab(value: AppTab.report) {
+                ReportView().toolbarVisibility(.hidden, for: .tabBar)
             }
             Tab(value: AppTab.settings) {
                 SettingsView().toolbarVisibility(.hidden, for: .tabBar)
@@ -45,7 +45,8 @@ struct RootView: View {
         .tint(Palette.ink)
         // `.fontDesign(.rounded)` would also override the Chalkboard custom fonts, so set a default font instead.
         .font(.system(.body, design: .rounded))
-        .environment(\.currencyCode, currencyCode)
+        .environment(\.currencyCode, mainCurrency)
+        .task { await ExchangeRates.shared.refreshIfStale() }
         .modifier(CloudSync())
         .modifier(AppLockModifier())
     }
@@ -96,7 +97,7 @@ private struct MerTabBar: View {
                     .contentShape(.capsule)
                 }
                 .buttonStyle(.plain)
-                .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
         .padding(4)
