@@ -16,10 +16,8 @@ nonisolated enum EntryKind: String, CaseIterable, Identifiable {
 
 @Model
 final class Entry {
-    /// The amount taken from or added to the account, in the account's currency.
     var amount: Decimal = 0
     var accountCode: String = ""
-    /// Set only when the entry was typed in another currency and converted into the account's currency.
     var originalAmount: Decimal?
     var originalCode: String?
     var kindRaw: String = EntryKind.expense.rawValue
@@ -59,7 +57,6 @@ final class EntryCategory {
     var crayonRaw: String = Crayon.butter.rawValue
     var kindRaw: String = EntryKind.expense.rawValue
     var sortOrder: Int = 0
-    /// Set only on built-in categories. Two devices that seed the same category produce the same key, so the copies can merge.
     var seedKey: String?
     @Relationship(deleteRule: .nullify, inverse: \Entry.category)
     var entries: [Entry]? = []

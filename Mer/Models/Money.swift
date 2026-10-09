@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Synchronization
 
 nonisolated enum Money {
     static let defaultCode = Locale.current.currency?.identifier ?? "USD"
@@ -12,16 +13,23 @@ nonisolated enum Money {
         Locale.current.localizedString(forCurrencyCode: code) ?? code
     }
 
-    /// Minor units of an ISO 4217 currency, for example 2 for USD, 0 for JPY, and 3 for KWD.
-    static func fractionDigits(_ code: String) -> Int {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = code
-        return formatter.maximumFractionDigits
+    static let fractionDigits = 2
+
+    private static let wholeAmountFractionDigitsByCode = Mutex<[String: Int]>([:])
+
+    fileprivate static func wholeAmountFractionDigits(_ code: String) -> Int {
+        wholeAmountFractionDigitsByCode.withLock { byCode in
+            if let digits = byCode[code] { return digits }
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .currency
+            formatter.currencyCode = code
+            let digits = min(formatter.maximumFractionDigits, fractionDigits)
+            byCode[code] = digits
+            return digits
+        }
     }
 }
 
-/// The currencies the user holds money in. An entry in one of these currencies stays in its own account, and an entry in any other currency converts into `main`.
 nonisolated struct Accounts {
     let main: String
     let others: [String]
@@ -31,7 +39,6 @@ nonisolated struct Accounts {
         self.others = others.filter { $0 != main }
     }
 
-    /// `storedOthers` is the comma-separated list stored under `DefaultsKey.otherCurrencies`.
     init(main: String, storedOthers: String) {
         self.init(main: main, others: storedOthers.split(separator: ",").map(String.init))
     }
@@ -59,11 +66,17 @@ nonisolated struct Accounts {
 
 nonisolated extension Decimal {
     func money(_ code: String) -> String {
-        formatted(.currency(code: code))
+        formatted(currencyStyle(code))
     }
 
     func signedMoney(_ code: String) -> String {
-        formatted(.currency(code: code).sign(strategy: .always()))
+        formatted(currencyStyle(code).sign(strategy: .always()))
+    }
+
+    private func currencyStyle(_ code: String) -> Decimal.FormatStyle.Currency {
+        let isWhole = self == rounded(scale: 0)
+        let digits = isWhole ? Money.wholeAmountFractionDigits(code) : Money.fractionDigits
+        return Decimal.FormatStyle.Currency(code: code).precision(.fractionLength(digits))
     }
 
     var double: Double { NSDecimalNumber(decimal: self).doubleValue }

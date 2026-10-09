@@ -14,7 +14,7 @@ nonisolated enum KeypadKey: Hashable {
 }
 
 nonisolated enum KeypadInput {
-    static func apply(_ key: KeypadKey, to text: String, fractionDigits: Int) -> String {
+    static func apply(_ key: KeypadKey, to text: String) -> String {
         let number = currentNumber(text)
         switch key {
         case .delete:
@@ -23,19 +23,19 @@ nonisolated enum KeypadInput {
             guard let last = text.last else { return text }
             return (isOperator(last) ? String(text.dropLast()) : text) + String(op.rawValue)
         case .dot:
-            if fractionDigits == 0 || number.contains(".") { return text }
+            if number.contains(".") { return text }
             return number.isEmpty ? text + "0." : text + "."
         case .digit(let digit):
             if let dot = number.firstIndex(of: ".") {
-                return number[number.index(after: dot)...].count >= fractionDigits ? text : text + String(digit)
+                return number[number.index(after: dot)...].count >= Money.fractionDigits ? text : text + String(digit)
             }
             if number == "0" { return String(text.dropLast()) + String(digit) }
             return number.count >= 9 ? text : text + String(digit)
         }
     }
 
-    static func amount(_ text: String, fractionDigits: Int) -> Decimal? {
-        guard let value = evaluate(text)?.rounded(scale: fractionDigits), value > 0 else { return nil }
+    static func amount(_ text: String) -> Decimal? {
+        guard let value = evaluate(text)?.rounded(scale: Money.fractionDigits), value > 0 else { return nil }
         return value
     }
 

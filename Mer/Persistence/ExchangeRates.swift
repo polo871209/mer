@@ -1,11 +1,9 @@
 import Foundation
 
-/// Daily reference rates, cached in `UserDefaults` so conversion also works offline.
 @Observable
 final class ExchangeRates {
     static let shared = ExchangeRates()
 
-    /// Units of each currency per 1 US dollar, keyed by uppercase ISO 4217 code.
     private var perDollar: [String: Double]
     private var fetchedAt: Date?
     private var isFetching = false
@@ -16,7 +14,6 @@ final class ExchangeRates {
         fetchedAt = defaults.object(forKey: DefaultsKey.exchangeRatesDate) as? Date
     }
 
-    /// How many units of `target` one unit of `source` buys.
     func rate(from source: String, to target: String) -> Decimal? {
         guard let source = perDollar[source], let target = perDollar[target], source > 0 else { return nil }
         return Decimal(target / source)

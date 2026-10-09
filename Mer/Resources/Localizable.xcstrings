@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
     "%@" : {
 
     },
@@ -43,6 +46,12 @@
     "Bills" : {
 
     },
+    "Blush" : {
+
+    },
+    "Butter" : {
+
+    },
     "Categories" : {
 
     },
@@ -53,6 +62,9 @@
 
     },
     "Clear" : {
+
+    },
+    "Cocoa" : {
 
     },
     "Crayon" : {
@@ -121,6 +133,9 @@
     "Fun" : {
 
     },
+    "Fur" : {
+
+    },
     "Gift" : {
 
     },
@@ -155,6 +170,9 @@
 
     },
     "Left" : {
+
+    },
+    "Lilac" : {
 
     },
     "Lock with Face ID" : {
@@ -295,6 +313,9 @@
     "Right" : {
 
     },
+    "Sage" : {
+
+    },
     "Salary" : {
 
     },
@@ -319,6 +340,9 @@
     "Side Gig" : {
 
     },
+    "Sky" : {
+
+    },
     "Spent" : {
 
     },
@@ -332,6 +356,9 @@
 
     },
     "Symbol" : {
+
+    },
+    "Tangerine" : {
 
     },
     "Tap + to log money in or out for this month." : {

@@ -19,6 +19,7 @@ struct DashboardView: View {
             .paperBackground()
             .toolbarVisibility(.hidden, for: .navigationBar)
         }
+        .followsCurrentPeriod($month, period: .month)
     }
 }
 

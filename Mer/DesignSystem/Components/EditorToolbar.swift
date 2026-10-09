@@ -8,19 +8,8 @@ struct EditorDeletion {
 }
 
 extension View {
-    /// The toolbar every editor sheet uses: close, delete after confirmation when `deletion` is set, and save. Each action dismisses the sheet.
     func editorToolbar(canSave: Bool, save: @escaping () -> Void, deletion: EditorDeletion? = nil) -> some View {
         modifier(EditorToolbar(canSave: canSave, save: save, deletion: deletion))
-    }
-
-    /// The swipe action every list uses to delete a row.
-    func swipeToDelete(_ delete: @escaping () -> Void) -> some View {
-        swipeActions {
-            Button("Delete", systemImage: "trash", role: .destructive) {
-                delete()
-                Haptics.deleted()
-            }
-        }
     }
 }
 
@@ -41,9 +30,9 @@ private struct EditorToolbar: ViewModifier {
                     Button("Delete", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
                         .confirmationDialog(deletion.question, isPresented: $isConfirmingDelete) {
                             Button(deletion.confirmTitle, role: .destructive) {
+                                dismiss()
                                 deletion.action()
                                 Haptics.deleted()
-                                dismiss()
                             }
                         } message: {
                             if let message = deletion.message { Text(message) }

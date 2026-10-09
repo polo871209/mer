@@ -61,12 +61,12 @@ struct LogExpenseIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard amount > 0 else {
+        let value = Decimal(amount).rounded(scale: Money.fractionDigits)
+        guard value > 0 else {
             throw $amount.needsValueError("How much did you spend?")
         }
         let context = Store.shared.mainContext
         let code = Money.mainCode
-        let value = Decimal(amount).rounded(scale: Money.fractionDigits(code))
         var match: EntryCategory?
         if let id = category?.id {
             match = try context.fetch(FetchDescriptor<EntryCategory>(predicate: #Predicate { $0.uuid == id })).first
@@ -82,6 +82,7 @@ struct LogExpenseIntent: AppIntent {
 struct MonthSpendingIntent: AppIntent {
     static let title: LocalizedStringResource = "Spent This Month"
     static let description = IntentDescription("Tells you how much you spent this month.")
+    static let authenticationPolicy = IntentAuthenticationPolicy.requiresAuthentication
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {

@@ -11,7 +11,6 @@ struct EntriesSheet: View {
         self.init(title: title, filter: #Predicate { $0.accountCode == account && $0.date >= start && $0.date < end })
     }
 
-    /// Lists the expenses of `account` in `interval` whose category has `categoryID`, or that have no category when `categoryID` is `nil`.
     init(title: String, account: String, interval: DateInterval, expensesIn categoryID: UUID?) {
         let start = interval.start
         let end = interval.end

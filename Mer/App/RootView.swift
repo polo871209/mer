@@ -23,7 +23,7 @@ enum AppTab: CaseIterable {
 struct RootView: View {
     @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
     @State private var tab = AppTab.home
-    @State private var isAdding = false
+    @State private var newEntry: NewEntryRequest?
 
     var body: some View {
         // The system tab bar cannot hold a separate add button, so each tab hides it and `MerTabBar` draws the bar.
@@ -39,17 +39,29 @@ struct RootView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            MerTabBar(selection: $tab) { isAdding = true }
+            MerTabBar(selection: $tab) { newEntry = NewEntryRequest(categoryID: nil) }
         }
-        .sheet(isPresented: $isAdding) { EntryEditor(entry: nil) }
+        .sheet(item: $newEntry) { request in
+            EntryEditor(entry: nil, presetCategoryID: request.categoryID).id(request.id)
+        }
+        .onOpenURL { url in
+            guard case .newEntry(let categoryID) = DeepLink(url) else { return }
+            withTransaction(\.disablesAnimations, true) { newEntry = NewEntryRequest(categoryID: categoryID) }
+        }
         .tint(Palette.ink)
         // `.fontDesign(.rounded)` would also override the Chalkboard custom fonts, so set a default font instead.
         .font(.system(.body, design: .rounded))
         .environment(\.currencyCode, mainCurrency)
         .task { await ExchangeRates.shared.refreshIfStale() }
         .modifier(CloudSync())
+        .modifier(WidgetCategorySync())
         .modifier(AppLockModifier())
     }
+}
+
+private struct NewEntryRequest: Identifiable {
+    let id = UUID()
+    let categoryID: UUID?
 }
 
 private struct MerTabBar: View {
@@ -82,6 +94,7 @@ private struct MerTabBar: View {
                     VStack(spacing: 3) {
                         item.icon
                             .frame(height: 26)
+                            .accessibilityHidden(true)
                         Text(item.title)
                             .font(.system(size: 11, weight: .semibold, design: .rounded))
                     }

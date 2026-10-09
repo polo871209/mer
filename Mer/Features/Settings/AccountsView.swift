@@ -10,6 +10,7 @@ struct AccountsView: View {
 
     var body: some View {
         let accounts = Accounts(main: mainCurrency, storedOthers: otherCurrencies)
+        let balances = entries.reduce(into: [String: Decimal]()) { $0[$1.accountCode, default: 0] += $1.signedAmount }
         Form {
             Section {
                 Button {
@@ -59,10 +60,6 @@ struct AccountsView: View {
     private func save(_ accounts: Accounts) {
         mainCurrency = accounts.main
         otherCurrencies = accounts.storedOthers
-    }
-
-    private var balances: [String: Decimal] {
-        entries.reduce(into: [:]) { $0[$1.accountCode, default: 0] += $1.signedAmount }
     }
 
     private func orphanedCodes(_ accounts: Accounts) -> [String] {

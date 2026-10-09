@@ -37,8 +37,13 @@ struct AppLockModifier: ViewModifier {
 
     private func unlock() async {
         guard isLocked else { return }
+        let context = LAContext()
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) else {
+            isLocked = false
+            return
+        }
         let reason = String(localized: "Unlock your money notes.")
-        if (try? await LAContext().evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true {
+        if (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) == true {
             isLocked = false
         }
     }

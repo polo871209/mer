@@ -40,7 +40,12 @@ struct EntryDayList<Top: View>: View {
                         }
                         .buttonStyle(.plain)
                         .listRowBackground(Color.clear)
-                        .swipeToDelete { context.delete(entry) }
+                        .swipeActions {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                context.delete(entry)
+                                Haptics.deleted()
+                            }
+                        }
                     }
                 } header: {
                     HStack {
@@ -76,7 +81,7 @@ struct EntryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            CategoryBadge(category: entry.category)
+            CategoryBadge(symbol: entry.category.displaySymbol, crayon: entry.category.displayCrayon)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.title)
                     .font(.body.weight(.medium))

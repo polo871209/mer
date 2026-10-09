@@ -15,14 +15,12 @@ enum Store {
         do {
             let container = try ModelContainer(for: schema, configurations: configuration)
             seedCategories(in: container.mainContext)
-            moveEntriesWithoutAccountToMain(in: container.mainContext)
             return container
         } catch {
             fatalError("Could not open the Mer store: \(error)")
         }
     }
 
-    /// Keeps one category per `seedKey`, choosing the lowest `uuid` so every device keeps the same copy, and moves entries onto it.
     static func mergeDuplicateCategories(in context: ModelContext) {
         let seeded = FetchDescriptor<EntryCategory>(predicate: #Predicate { $0.seedKey != nil })
         guard let categories = try? context.fetch(seeded) else { return }
@@ -35,14 +33,6 @@ enum Store {
                 context.delete(duplicate)
             }
         }
-        try? context.save()
-    }
-
-    private static func moveEntriesWithoutAccountToMain(in context: ModelContext) {
-        let withoutAccount = FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == "" })
-        guard let entries = try? context.fetch(withoutAccount), !entries.isEmpty else { return }
-        let main = Money.mainCode
-        for entry in entries { entry.accountCode = main }
         try? context.save()
     }
 
@@ -92,25 +82,26 @@ extension Store {
         let categories = (try? context.fetch(FetchDescriptor<EntryCategory>(sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
         let expenses = categories.filter { $0.kind == .expense }
         let calendar = Calendar.current
-        let main = Money.mainCode
-        let salary = Entry(amount: 4200, accountCode: main, kind: .income, date: calendar.date(byAdding: .day, value: -12, to: .now) ?? .now, note: "")
-        context.insert(salary)
-        salary.category = categories.first { $0.kind == .income }
-        let samples: [(Decimal, Int, String)] = [
-            (12.5, 0, "Nasi lemak"), (86.2, 1, ""), (4.2, 2, "Train"), (129, 3, "Shoes"),
-            (210, 4, "Electricity"), (38, 11, "Cat food"), (22, 6, "Cinema"), (15.8, 0, "Coffee"),
-        ]
-        for (offset, sample) in samples.enumerated() {
-            let entry = Entry(
-                amount: sample.0, accountCode: main, kind: .expense, date: calendar.date(byAdding: .day, value: -offset * 2, to: .now) ?? .now, note: sample.2)
+        @discardableResult
+        func add(_ amount: Decimal, _ kind: EntryKind, _ category: EntryCategory?, daysAgo: Int, note: String = "") -> Entry {
+            let date = calendar.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now
+            let entry = Entry(amount: amount, accountCode: Money.mainCode, kind: kind, date: date, note: note)
             context.insert(entry)
-            entry.category = expenses[sample.1]
+            entry.category = category
+            return entry
         }
-        let ramen = Entry(amount: 41.2, accountCode: main, kind: .expense, date: calendar.date(byAdding: .day, value: -3, to: .now) ?? .now, note: "Ramen")
+        add(4200, .income, categories.first { $0.kind == .income }, daysAgo: 12)
+        add(12.5, .expense, expenses[0], daysAgo: 0, note: "Nasi lemak")
+        add(86.2, .expense, expenses[1], daysAgo: 2)
+        add(4.2, .expense, expenses[2], daysAgo: 4, note: "Train")
+        add(129, .expense, expenses[3], daysAgo: 6, note: "Shoes")
+        add(210, .expense, expenses[4], daysAgo: 8, note: "Electricity")
+        add(38, .expense, expenses[11], daysAgo: 10, note: "Cat food")
+        add(22, .expense, expenses[6], daysAgo: 12, note: "Cinema")
+        add(15.8, .expense, expenses[0], daysAgo: 14, note: "Coffee")
+        let ramen = add(41.2, .expense, expenses[0], daysAgo: 3, note: "Ramen")
         ramen.originalAmount = 1600
         ramen.originalCode = "JPY"
-        context.insert(ramen)
-        ramen.category = expenses[0]
         return container
     }()
 }

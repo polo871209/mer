@@ -7,8 +7,14 @@ struct SettingsView: View {
     @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
     @AppStorage(DefaultsKey.lockEnabled) private var lockEnabled = false
     @AppStorage(DefaultsKey.addButtonOnLeft) private var addButtonOnLeft = false
-    @Query private var entries: [Entry]
-    @State private var canAuthenticate = LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
+    @Query(Self.firstEntry) private var entries: [Entry]
+    @State private var canAuthenticate = false
+
+    private static var firstEntry: FetchDescriptor<Entry> {
+        var descriptor = FetchDescriptor<Entry>()
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
 
     var body: some View {
         NavigationStack {
@@ -63,6 +69,7 @@ struct SettingsView: View {
             .paperBackground()
             .toolbarVisibility(.hidden, for: .navigationBar)
         }
+        .task { canAuthenticate = LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) }
     }
 }
 
