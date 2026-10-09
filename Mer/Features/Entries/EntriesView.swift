@@ -2,128 +2,128 @@ import SwiftData
 import SwiftUI
 
 struct EntriesView: View {
-    @State private var month = Calendar.current.monthInterval(containing: .now).start
-    @State private var search = ""
+    @State private var month: Date
+    @State private var day: Date?
+    @State private var searchText = ""
+    @Environment(\.currencyCode) private var account
+
+    init(month: Date) {
+        _month = State(initialValue: month)
+    }
 
     var body: some View {
-        EntryList(month: $month, search: $search)
-            .background { PaperBackground() }
+        Group {
+            if let search = EntrySearch(searchText) {
+                SearchResults(account: account, search: search)
+            } else {
+                MonthEntries(account: account, month: $month, day: $day)
+            }
+        }
+        .paperBackground()
+        .navigationTitle("Entries")
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Amount, category, or note")
     }
 }
 
-private struct EntryList: View {
+private struct MonthEntries: View {
     @Query private var entries: [Entry]
-    @Environment(\.modelContext) private var context
-    @Environment(\.currencyCode) private var code
-    @State private var editing: Entry?
-    @State private var deletions = 0
     @Binding private var month: Date
-    @Binding private var search: String
+    @Binding private var day: Date?
+    @State private var isPickingDay = false
 
-    init(month: Binding<Date>, search: Binding<String>) {
-        let interval = Calendar.current.monthInterval(containing: month.wrappedValue)
+    init(account: String, month: Binding<Date>, day: Binding<Date?>) {
+        let interval =
+            day.wrappedValue.flatMap { Calendar.current.dateInterval(of: .day, for: $0) }
+            ?? Period.month.interval(containing: month.wrappedValue)
         let start = interval.start
         let end = interval.end
         _month = month
-        _search = search
-        _entries = Query(filter: #Predicate<Entry> { $0.date >= start && $0.date < end }, sort: \Entry.date, order: .reverse)
+        _day = day
+        _entries = Query(
+            filter: #Predicate<Entry> { $0.accountCode == account && $0.date >= start && $0.date < end },
+            sort: \Entry.date,
+            order: .reverse
+        )
     }
 
     var body: some View {
-        let days = groupedByDay
-        List {
-            MonthPicker(month: $month)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            SearchField(text: $search)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            if days.isEmpty {
+        EntryDayList(entries: entries) {
+            PeriodPicker(period: .month, date: wholeMonth) { isPickingDay = true }
+            if let day {
+                Button {
+                    withAnimation(.snappy) { self.day = nil }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(day, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
+                        Image(systemName: "xmark")
+                            .font(.caption.weight(.bold))
+                    }
+                    .font(.crayon(15, relativeTo: .subheadline))
+                }
+                .buttonStyle(.glass)
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel("Show Whole Month")
+                .accessibilityValue(Text(day, format: .dateTime.weekday(.wide).month(.wide).day()))
+            }
+            if entries.isEmpty {
                 Group {
-                    if search.isEmpty {
+                    if day == nil {
                         MerEmptyState(title: "No entries", message: "Tap + to log money in or out for this month.")
                     } else {
-                        MerEmptyState(title: "No matches", message: "Mer looked everywhere, even in the bowl.")
+                        MerEmptyState(title: "No entries", message: "Nothing logged here.")
                     }
                 }
                 .padding(.top, 40)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
             }
-            ForEach(days, id: \.day) { group in
-                Section {
-                    ForEach(group.entries) { entry in
-                        Button {
-                            editing = entry
-                        } label: {
-                            EntryRow(entry: entry)
-                        }
-                        .buttonStyle(.plain)
-                        .listRowBackground(Color.clear)
-                        .swipeActions {
-                            Button("Delete", systemImage: "trash", role: .destructive) {
-                                context.delete(entry)
-                                deletions += 1
-                            }
-                        }
+        }
+        .sheet(isPresented: $isPickingDay) {
+            MonthCalendar(month: day ?? month, selection: day) { picked in
+                withAnimation(.snappy) {
+                    if let day, Calendar.current.isDate(day, inSameDayAs: picked) {
+                        self.day = nil
+                    } else {
+                        month = Period.month.interval(containing: picked).start
+                        self.day = picked
                     }
-                } header: {
-                    HStack {
-                        Text(group.day, format: .dateTime.weekday(.wide).day().month())
-                        Spacer()
-                        Text(group.entries.reduce(Decimal.zero) { $0 + $1.signedAmount }.signedMoney(code))
-                    }
-                    .font(.crayon(14, relativeTo: .subheadline))
-                    .foregroundStyle(Palette.pencil)
                 }
             }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .scrollDismissesKeyboard(.immediately)
-        .sensoryFeedback(.impact(weight: .medium), trigger: deletions)
-        .sheet(item: $editing) { EntryEditor(entry: $0) }
     }
 
-    private var groupedByDay: [(day: Date, entries: [Entry])] {
-        let calendar = Calendar.current
-        let matches =
-            search.isEmpty
-            ? entries
-            : entries.filter {
-                $0.note.localizedStandardContains(search) || ($0.category?.name.localizedStandardContains(search) ?? false)
-            }
-        return Dictionary(grouping: matches) { calendar.startOfDay(for: $0.date) }
-            .sorted { $0.key > $1.key }
-            .map { (day: $0.key, entries: $0.value) }
+    private var wholeMonth: Binding<Date> {
+        Binding {
+            month
+        } set: {
+            month = $0
+            day = nil
+        }
     }
 }
 
-private struct SearchField: View {
-    @Binding var text: String
+private struct SearchResults: View {
+    let search: EntrySearch
+    @Query private var entries: [Entry]
+
+    init(account: String, search: EntrySearch) {
+        self.search = search
+        _entries = Query(filter: #Predicate<Entry> { $0.accountCode == account }, sort: \Entry.date, order: .reverse)
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(Palette.pencil)
-            TextField("Note or category", text: $text)
-                .submitLabel(.search)
-                .autocorrectionDisabled()
-            if !text.isEmpty {
-                Button("Clear Search", systemImage: "xmark.circle.fill") { text = "" }
-                    .labelStyle(.iconOnly)
-                    .foregroundStyle(Palette.pencil)
-                    .buttonStyle(.plain)
+        let matches = entries.filter(search.matches)
+        EntryDayList(entries: matches) {
+            if matches.isEmpty {
+                MerEmptyState(title: "No matches", message: "Mer looked everywhere, even in the bowl.")
+                    .padding(.top, 40)
             }
         }
-        .foregroundStyle(Palette.ink)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background { SketchyBackground(seed: 70, cornerRadius: 10) }
     }
 }
 
 #Preview {
-    EntriesView()
-        .modelContainer(Store.preview)
+    NavigationStack {
+        EntriesView(month: .now)
+    }
+    .modelContainer(Store.preview)
 }

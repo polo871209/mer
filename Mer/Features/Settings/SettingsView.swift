@@ -1,12 +1,14 @@
+import LocalAuthentication
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
-    @AppStorage(DefaultsKey.currencyCode) private var currencyCode = Money.defaultCode
+    @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
     @AppStorage(DefaultsKey.lockEnabled) private var lockEnabled = false
     @AppStorage(DefaultsKey.addButtonOnLeft) private var addButtonOnLeft = false
-    @Query(sort: \Entry.date, order: .reverse) private var entries: [Entry]
+    @Query private var entries: [Entry]
+    @State private var canAuthenticate = LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
 
     var body: some View {
         NavigationStack {
@@ -16,19 +18,18 @@ struct SettingsView: View {
                         MerAvatar(size: 64)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Mer").font(.crayon(24, relativeTo: .title2))
-                            Text("Your money, counted by a cat.").foregroundStyle(Palette.pencil)
+                            Text("It's Mer's money. You just carry it.").foregroundStyle(Palette.pencil)
                         }
                     }
                     .padding(.vertical, 4)
                 }
 
                 Section("Money") {
-                    Picker("Currency", selection: $currencyCode) {
-                        ForEach(Locale.commonISOCurrencyCodes, id: \.self) { code in
-                            Text(verbatim: "\(Locale.current.localizedString(forCurrencyCode: code) ?? code) (\(code))").tag(code)
-                        }
+                    NavigationLink {
+                        AccountsView()
+                    } label: {
+                        LabeledContent("Accounts", value: Money.name(mainCurrency))
                     }
-                    .pickerStyle(.navigationLink)
                     NavigationLink("Categories") { CategoriesView() }
                 }
 
@@ -45,7 +46,7 @@ struct SettingsView: View {
 
                 Section {
                     Toggle("Lock with Face ID", isOn: $lockEnabled)
-                        .disabled(!lockEnabled && !AppLock.canAuthenticate)
+                        .disabled(!lockEnabled && !canAuthenticate)
                 } header: {
                     Text("Privacy")
                 } footer: {
@@ -53,45 +54,44 @@ struct SettingsView: View {
                 }
 
                 Section("Data") {
-                    ShareLink(item: CSVDocument(entries: entries), preview: SharePreview("Mer entries.csv")) {
+                    ShareLink(item: EntriesCSV(), preview: SharePreview("Mer entries.csv")) {
                         Label("Export CSV", systemImage: "square.and.arrow.up")
                     }
                     .disabled(entries.isEmpty)
-                    LabeledContent("Entries", value: entries.count, format: .number)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background { PaperBackground() }
+            .paperBackground()
             .toolbarVisibility(.hidden, for: .navigationBar)
         }
     }
 }
 
-nonisolated struct CSVDocument: Transferable {
-    let text: String
+nonisolated struct EntriesCSV: Transferable {
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .commaSeparatedText) { _ in
+            let csv = try await MainActor.run { try text() }
+            return Data(csv.utf8)
+        }
+        .suggestedFileName("Mer entries.csv")
+    }
 
-    @MainActor init(entries: [Entry]) {
-        let code = Money.currentCode
-        let header = ["Date", "Type", "Category", "Amount", "Currency", "Note"]
+    @MainActor
+    private static func text() throws -> String {
+        let entries = try Store.shared.mainContext.fetch(FetchDescriptor<Entry>(sortBy: [SortDescriptor(\.date, order: .reverse)]))
+        let header = ["Date", "Type", "Category", "Amount", "Account", "Original Amount", "Original Currency", "Note"]
         let rows = entries.map { entry in
             [
                 entry.date.formatted(.iso8601),
                 entry.kind.rawValue,
                 entry.category?.name ?? "",
-                entry.amount.plainString,
-                code,
+                entry.amount.description,
+                entry.accountCode,
+                entry.originalAmount?.description ?? "",
+                entry.originalCode ?? "",
                 entry.note,
             ]
         }
-        text = CSV.make([header] + rows)
-    }
-
-    static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .commaSeparatedText) { document in
-            let url = URL.temporaryDirectory.appending(path: "Mer entries.csv")
-            try document.text.write(to: url, atomically: true, encoding: .utf8)
-            return SentTransferredFile(url)
-        }
+        return CSV.make([header] + rows)
     }
 }
 

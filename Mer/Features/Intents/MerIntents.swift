@@ -21,20 +21,22 @@ nonisolated struct CategoryEntity: AppEntity {
 nonisolated struct CategoryQuery: EntityQuery {
     @MainActor
     func entities(for identifiers: [UUID]) async throws -> [CategoryEntity] {
-        try expenseCategories().filter { identifiers.contains($0.id) }
+        try expenseCategories(#Predicate { identifiers.contains($0.uuid) })
     }
 
     @MainActor
     func suggestedEntities() async throws -> [CategoryEntity] {
-        try expenseCategories()
+        try expenseCategories(.true)
     }
 
     @MainActor
-    private func expenseCategories() throws -> [CategoryEntity] {
-        let descriptor = FetchDescriptor<EntryCategory>(sortBy: [SortDescriptor(\.sortOrder)])
-        return try Store.shared.mainContext.fetch(descriptor)
-            .filter { $0.kind == .expense }
-            .map { CategoryEntity(id: $0.uuid, name: $0.name, symbol: $0.symbol) }
+    private func expenseCategories(_ filter: Predicate<EntryCategory>) throws -> [CategoryEntity] {
+        let expense = EntryKind.expense.rawValue
+        let descriptor = FetchDescriptor<EntryCategory>(
+            predicate: #Predicate { $0.kindRaw == expense && filter.evaluate($0) },
+            sortBy: [SortDescriptor(\.sortOrder)]
+        )
+        return try Store.shared.mainContext.fetch(descriptor).map { CategoryEntity(id: $0.uuid, name: $0.name, symbol: $0.symbol) }
     }
 }
 
@@ -63,14 +65,17 @@ struct LogExpenseIntent: AppIntent {
             throw $amount.needsValueError("How much did you spend?")
         }
         let context = Store.shared.mainContext
-        let value = Decimal(amount).rounded(scale: 2)
-        let entry = Entry(amount: value, kind: .expense, note: note.trimmingCharacters(in: .whitespacesAndNewlines))
-        context.insert(entry)
+        let code = Money.mainCode
+        let value = Decimal(amount).rounded(scale: Money.fractionDigits(code))
+        var match: EntryCategory?
         if let id = category?.id {
-            entry.category = try context.fetch(FetchDescriptor<EntryCategory>(predicate: #Predicate { $0.uuid == id })).first
+            match = try context.fetch(FetchDescriptor<EntryCategory>(predicate: #Predicate { $0.uuid == id })).first
         }
+        let entry = Entry(amount: value, accountCode: code, kind: .expense, note: note.trimmingCharacters(in: .whitespacesAndNewlines))
+        context.insert(entry)
+        entry.category = match
         try context.save()
-        return .result(dialog: "Logged \(value.money(Money.currentCode)). Mer wrote it down.")
+        return .result(dialog: "Logged \(value.money(code)). Mer wrote it down.")
     }
 }
 
@@ -80,13 +85,15 @@ struct MonthSpendingIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let interval = Calendar.current.monthInterval(containing: .now)
+        let interval = Period.month.interval(containing: .now)
         let start = interval.start
         let end = interval.end
+        let expense = EntryKind.expense.rawValue
+        let main = Money.mainCode
         let entries = try Store.shared.mainContext.fetch(
-            FetchDescriptor<Entry>(predicate: #Predicate { $0.date >= start && $0.date < end })
+            FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == main && $0.date >= start && $0.date < end && $0.kindRaw == expense })
         )
-        let spent = MonthSummary(entries: entries).expense.money(Money.currentCode)
+        let spent = entries.reduce(Decimal.zero) { $0 + $1.amount }.money(main)
         return .result(dialog: "You spent \(spent) this month.")
     }
 }

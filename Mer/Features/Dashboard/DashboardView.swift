@@ -3,45 +3,53 @@ import SwiftData
 import SwiftUI
 
 struct DashboardView: View {
-    @State private var month = Calendar.current.monthInterval(containing: .now).start
+    @State private var month = Period.month.interval(containing: .now).start
+    @Environment(\.currencyCode) private var account
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                MonthPicker(month: $month)
-                DashboardContent(month: month)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 18) {
+                    PeriodPicker(period: .month, date: $month)
+                    DashboardContent(month: month, account: account)
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 24)
+            .paperBackground()
+            .toolbarVisibility(.hidden, for: .navigationBar)
         }
-        .background { PaperBackground() }
     }
 }
 
 private struct DashboardContent: View {
     @Query private var entries: [Entry]
-    @State private var editing: Entry?
+    private let month: Date
     private let interval: DateInterval
 
-    init(month: Date) {
-        let interval = Calendar.current.monthInterval(containing: month)
+    init(month: Date, account: String) {
+        self.month = month
+        let interval = Period.month.interval(containing: month)
         let start = interval.start
         let end = interval.end
         self.interval = interval
-        _entries = Query(filter: #Predicate<Entry> { $0.date >= start && $0.date < end }, sort: \Entry.date, order: .reverse)
+        _entries = Query(
+            filter: #Predicate<Entry> { $0.accountCode == account && $0.date >= start && $0.date < end },
+            sort: \Entry.date,
+            order: .reverse
+        )
     }
 
     var body: some View {
-        let summary = MonthSummary(entries: entries)
+        let summary = PeriodSummary(entries: entries)
         VStack(spacing: 18) {
             MerSays(mood: MerMood(summary: summary))
             SpentCard(spent: summary.expense)
             if !summary.days.isEmpty {
-                DailyCard(summary: summary, interval: interval)
+                DailyCard(days: summary.days, interval: interval)
             }
-            RecentCard(entries: Array(entries.prefix(5)), editing: $editing)
+            RecentCard(entries: Array(entries.prefix(5)), month: month)
         }
-        .sheet(item: $editing) { EntryEditor(entry: $0) }
     }
 }
 
@@ -84,14 +92,16 @@ private struct SpentCard: View {
 }
 
 private struct DailyCard: View {
-    let summary: MonthSummary
+    let days: [DayTotal]
     let interval: DateInterval
+    @Environment(\.currencyCode) private var account
+    @State private var tappedDate: Date?
     @State private var openDay: DayTotal?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Day by day").font(.crayon(20, relativeTo: .title3))
-            Chart(summary.days) { day in
+            Text("Day by day").cardTitle()
+            Chart(days) { day in
                 BarMark(x: .value("Day", day.day, unit: .day), y: .value("Spent", day.expense.double))
                     .foregroundStyle(Crayon.sky.color)
                     .cornerRadius(3)
@@ -100,94 +110,57 @@ private struct DailyCard: View {
             .chartXAxis {
                 AxisMarks(values: .stride(by: .day, count: 7)) { _ in
                     AxisGridLine()
-                    AxisValueLabel(format: .dateTime.day())
+                    AxisValueLabel(format: .dateTime.day(), anchor: .top)
                 }
             }
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    Rectangle()
-                        .fill(.clear)
-                        .contentShape(.rect)
-                        .onTapGesture { location in
-                            guard let plotFrame = proxy.plotFrame,
-                                let date: Date = proxy.value(atX: location.x - geometry[plotFrame].origin.x)
-                            else { return }
-                            openDay = summary.days.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
-                        }
+            .chartYAxis {
+                AxisMarks { _ in
+                    AxisGridLine()
+                    AxisValueLabel(anchor: .leading)
                 }
+            }
+            .chartXSelection(value: $tappedDate)
+            .chartGesture { proxy in
+                SpatialTapGesture().onEnded { proxy.selectXValue(at: $0.location.x) }
+            }
+            .onChange(of: tappedDate) { _, date in
+                guard let date else { return }
+                openDay = days.first { Calendar.current.isDate($0.day, inSameDayAs: date) }
+                tappedDate = nil
             }
             .frame(height: 160)
+            .id(interval)
         }
         .foregroundStyle(Palette.ink)
         .sketchyCard(seed: 4)
-        .sheet(item: $openDay) { DayEntriesSheet(day: $0.day) }
-    }
-}
-
-private struct DayEntriesSheet: View {
-    let day: Date
-    @Query private var entries: [Entry]
-    @State private var editing: Entry?
-    @Environment(\.dismiss) private var dismiss
-
-    init(day: Date) {
-        let start = Calendar.current.startOfDay(for: day)
-        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
-        self.day = start
-        _entries = Query(filter: #Predicate<Entry> { $0.date >= start && $0.date < end }, sort: \Entry.date, order: .reverse)
-    }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    if entries.isEmpty {
-                        MerEmptyState(title: "No entries", message: "Nothing logged on this day.")
-                    }
-                    ForEach(entries) { entry in
-                        Button {
-                            editing = entry
-                        } label: {
-                            EntryRow(entry: entry)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding()
-            }
-            .background { PaperBackground() }
-            .navigationTitle(day.formatted(.dateTime.weekday(.wide).day().month()))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close", systemImage: "xmark", role: .cancel) { dismiss() }
-                }
-            }
+        .sheet(item: $openDay) { day in
+            EntriesSheet(
+                title: day.day.formatted(.dateTime.weekday(.wide).day().month()),
+                account: account,
+                interval: DateInterval(start: day.day, end: Calendar.current.date(byAdding: .day, value: 1, to: day.day) ?? day.day)
+            )
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .sheet(item: $editing) { EntryEditor(entry: $0) }
     }
 }
 
 private struct RecentCard: View {
     let entries: [Entry]
-    @Binding var editing: Entry?
+    let month: Date
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Recent").font(.crayon(20, relativeTo: .title3))
+            HStack {
+                Text("Recent").cardTitle()
+                Spacer()
+                if !entries.isEmpty {
+                    NavigationLink("See All") { EntriesView(month: month) }
+                        .font(.crayon(15, relativeTo: .subheadline))
+                }
+            }
             if entries.isEmpty {
                 Text("Tap + to log your first entry.").foregroundStyle(Palette.pencil)
             }
-            ForEach(entries) { entry in
-                Button {
-                    editing = entry
-                } label: {
-                    EntryRow(entry: entry)
-                }
-                .buttonStyle(.plain)
-            }
+            EntryList(entries: entries)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .foregroundStyle(Palette.ink)

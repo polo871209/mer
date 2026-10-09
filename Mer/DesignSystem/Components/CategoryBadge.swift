@@ -6,14 +6,21 @@ struct CategoryBadge: View {
     var size: CGFloat = 40
 
     var body: some View {
+        let outline = SketchyEllipse(seed: symbol.stableSeed)
         Image(systemName: symbol)
             .font(.system(size: size * 0.42, weight: .semibold))
             .foregroundStyle(Palette.ink)
             .frame(width: size, height: size)
             .background {
-                CrayonFill(color: crayon.color, shape: SketchyEllipse(seed: symbol.stableSeed), seed: symbol.stableSeed)
-                SketchyEllipse(seed: symbol.stableSeed).stroke(Palette.ink, lineWidth: 1.6)
+                CrayonFill(color: crayon.color, shape: outline, seed: outline.seed)
+                outline.stroke(Palette.ink, lineWidth: 1.6)
             }
             .accessibilityHidden(true)
+    }
+}
+
+extension CategoryBadge {
+    init(category: EntryCategory?, size: CGFloat = 40) {
+        self.init(symbol: category.displaySymbol, crayon: category.displayCrayon, size: size)
     }
 }

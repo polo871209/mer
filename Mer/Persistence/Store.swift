@@ -15,6 +15,7 @@ enum Store {
         do {
             let container = try ModelContainer(for: schema, configurations: configuration)
             seedCategories(in: container.mainContext)
+            moveEntriesWithoutAccountToMain(in: container.mainContext)
             return container
         } catch {
             fatalError("Could not open the Mer store: \(error)")
@@ -34,6 +35,14 @@ enum Store {
                 context.delete(duplicate)
             }
         }
+        try? context.save()
+    }
+
+    private static func moveEntriesWithoutAccountToMain(in context: ModelContext) {
+        let withoutAccount = FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == "" })
+        guard let entries = try? context.fetch(withoutAccount), !entries.isEmpty else { return }
+        let main = Money.mainCode
+        for entry in entries { entry.accountCode = main }
         try? context.save()
     }
 
@@ -83,7 +92,8 @@ extension Store {
         let categories = (try? context.fetch(FetchDescriptor<EntryCategory>(sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
         let expenses = categories.filter { $0.kind == .expense }
         let calendar = Calendar.current
-        let salary = Entry(amount: 4200, kind: .income, date: calendar.date(byAdding: .day, value: -12, to: .now) ?? .now, note: "")
+        let main = Money.mainCode
+        let salary = Entry(amount: 4200, accountCode: main, kind: .income, date: calendar.date(byAdding: .day, value: -12, to: .now) ?? .now, note: "")
         context.insert(salary)
         salary.category = categories.first { $0.kind == .income }
         let samples: [(Decimal, Int, String)] = [
@@ -91,10 +101,16 @@ extension Store {
             (210, 4, "Electricity"), (38, 11, "Cat food"), (22, 6, "Cinema"), (15.8, 0, "Coffee"),
         ]
         for (offset, sample) in samples.enumerated() {
-            let entry = Entry(amount: sample.0, kind: .expense, date: calendar.date(byAdding: .day, value: -offset * 2, to: .now) ?? .now, note: sample.2)
+            let entry = Entry(
+                amount: sample.0, accountCode: main, kind: .expense, date: calendar.date(byAdding: .day, value: -offset * 2, to: .now) ?? .now, note: sample.2)
             context.insert(entry)
             entry.category = expenses[sample.1]
         }
+        let ramen = Entry(amount: 41.2, accountCode: main, kind: .expense, date: calendar.date(byAdding: .day, value: -3, to: .now) ?? .now, note: "Ramen")
+        ramen.originalAmount = 1600
+        ramen.originalCode = "JPY"
+        context.insert(ramen)
+        ramen.category = expenses[0]
         return container
     }()
 }

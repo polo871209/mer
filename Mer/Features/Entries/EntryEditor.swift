@@ -1,30 +1,40 @@
 import SwiftData
 import SwiftUI
-import UIKit
 
 struct EntryEditor: View {
     private let entry: Entry?
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @Environment(\.currencyCode) private var code
+    @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
+    @AppStorage(DefaultsKey.otherCurrencies) private var otherCurrencies = ""
     @Query(sort: \EntryCategory.sortOrder) private var categories: [EntryCategory]
     @State private var kind: EntryKind
     @State private var digits: String
+    @State private var currency: String
+    @State private var isPickingCurrency = false
     @State private var category: EntryCategory?
     @State private var note: String
+    @State private var date: Date
     @FocusState private var isEditingNote: Bool
 
     init(entry: Entry?) {
         self.entry = entry
         _kind = State(initialValue: entry?.kind ?? .expense)
-        _digits = State(initialValue: entry?.amount.plainString ?? "")
+        _digits = State(initialValue: entry?.typedAmount.description ?? "")
+        _currency = State(initialValue: entry?.typedCode ?? Money.mainCode)
         _category = State(initialValue: entry?.category)
         _note = State(initialValue: entry?.note ?? "")
+        _date = State(initialValue: entry?.date ?? .now)
     }
 
     private var choices: [EntryCategory] { categories.filter { $0.kind == kind } }
 
     var body: some View {
+        let accounts = Accounts(main: mainCurrency, storedOthers: otherCurrencies)
+        let account = accounts.account(for: currency)
+        let fractionDigits = Money.fractionDigits(currency)
+        let amount = KeypadInput.amount(digits, fractionDigits: fractionDigits)
+        let conversion = account == currency ? nil : Conversion(account: account, rate: savedOrLatestRate(to: account))
+        let accountAmount = if let conversion { amount.flatMap(conversion.convert) } else { amount }
         NavigationStack {
             VStack(spacing: 14) {
                 Picker("Type", selection: $kind) {
@@ -32,9 +42,12 @@ struct EntryEditor: View {
                 }
                 .pickerStyle(.segmented)
 
-                amountDisplay
+                amountDisplay(amount, fractionDigits: fractionDigits, conversion: conversion, accountAmount: accountAmount)
 
-                CategoryField(categories: choices, selection: $category)
+                HStack(spacing: 10) {
+                    CategoryField(categories: choices, selection: $category)
+                    DateField(date: $date)
+                }
 
                 HStack(spacing: 10) {
                     TextField("Add note", text: $note)
@@ -54,40 +67,46 @@ struct EntryEditor: View {
                 Spacer(minLength: 0)
 
                 if !isEditingNote {
-                    Keypad(text: $digits)
+                    Keypad(text: $digits, fractionDigits: fractionDigits)
                 }
             }
             .padding()
             .foregroundStyle(Palette.ink)
-            .background { PaperBackground() }
+            .paperBackground()
             .navigationTitle(entry == nil ? "New Entry" : "Edit Entry")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark", role: .cancel) { dismiss() }
+            .editorToolbar(
+                canSave: amount != nil && accountAmount != nil,
+                save: { save(amount, accountAmount: accountAmount, account: account) },
+                deletion: entry.map { entry in
+                    EditorDeletion(question: "Delete this entry?", confirmTitle: "Delete Entry") { context.delete(entry) }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark", role: .confirm) { save() }
-                        .disabled(KeypadInput.amount(digits) == nil)
-                }
-            }
+            )
             .onChange(of: kind) {
                 if category?.kind != kind { category = choices.first }
             }
             .onAppear {
-                if category == nil { category = choices.first }
+                if entry == nil, category == nil { category = choices.first }
+            }
+            .task(id: currency) {
+                if account != currency { await ExchangeRates.shared.refreshIfStale() }
+            }
+            .sheet(isPresented: $isPickingCurrency) {
+                CurrencyPicker(selection: currency) { currency = $0 }
             }
         }
-        .presentationDragIndicator(.visible)
     }
 
-    private var amountDisplay: some View {
+    private func amountDisplay(_ amount: Decimal?, fractionDigits: Int, conversion: Conversion?, accountAmount: Decimal?) -> some View {
         VStack(spacing: 2) {
             expression
             if KeypadInput.hasOperator(digits) {
-                Text(verbatim: "= " + (KeypadInput.evaluate(digits)?.rounded(scale: 2).money(code) ?? "?"))
+                Text(verbatim: "= " + (KeypadInput.evaluate(digits)?.rounded(scale: fractionDigits).money(currency) ?? "?"))
                     .font(.crayon(18, relativeTo: .headline, bold: false))
-                    .foregroundStyle(KeypadInput.amount(digits) == nil ? Palette.expense : Palette.pencil)
+                    .foregroundStyle(amount == nil ? Palette.expense : Palette.pencil)
+            }
+            if let conversion {
+                conversionLine(conversion, accountAmount: accountAmount)
             }
         }
         .frame(maxWidth: .infinity)
@@ -95,7 +114,30 @@ struct EntryEditor: View {
         .animation(.snappy, value: digits)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Amount")
-        .accessibilityValue((KeypadInput.amount(digits) ?? 0).money(code))
+        .accessibilityValue((amount ?? 0).money(currency))
+        .accessibilityAction(named: "Change Currency") { isPickingCurrency = true }
+    }
+
+    private func conversionLine(_ conversion: Conversion, accountAmount: Decimal?) -> some View {
+        Group {
+            if let rate = conversion.rate {
+                let rateText = "1 \(currency) ≈ \(rate.formatted(.number.precision(.significantDigits(1...4)))) \(conversion.account)"
+                Text(verbatim: "≈ \((accountAmount ?? 0).money(conversion.account)) · \(rateText)")
+                    .foregroundStyle(Palette.pencil)
+            } else {
+                Text("No exchange rate yet. Connect to the internet to convert into \(conversion.account).")
+                    .foregroundStyle(Palette.expense)
+            }
+        }
+        .font(.crayon(15, relativeTo: .subheadline, bold: false))
+        .multilineTextAlignment(.center)
+    }
+
+    private func savedOrLatestRate(to account: String) -> Decimal? {
+        if let entry, let original = entry.originalAmount, original > 0, entry.originalCode == currency, entry.accountCode == account {
+            return entry.amount / original
+        }
+        return ExchangeRates.shared.rate(from: currency, to: account)
     }
 
     private var expression: some View {
@@ -108,29 +150,56 @@ struct EntryEditor: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.4)
                 .contentTransition(.numericText())
-            Text(code)
-                .font(.crayon(18, relativeTo: .headline, bold: false))
-                .foregroundStyle(Palette.pencil)
+            Button {
+                isPickingCurrency = true
+            } label: {
+                HStack(spacing: 4) {
+                    Text(currency)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption.weight(.semibold))
+                }
+                .font(.crayon(18, relativeTo: .headline))
+                .foregroundStyle(Palette.ink)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background { SketchyBackground(fill: Crayon.butter.color.opacity(0.35), seed: 60, cornerRadius: 10) }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Currency")
+            .accessibilityValue(Money.name(currency))
         }
     }
 
-    private func save() {
-        guard let amount = KeypadInput.amount(digits) else { return }
+    private func save(_ amount: Decimal?, accountAmount: Decimal?, account: String) {
+        guard let amount, let accountAmount else { return }
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let target: Entry
         if let entry {
             target = entry
         } else {
-            target = Entry(amount: amount, kind: kind)
+            target = Entry(amount: accountAmount, accountCode: account, kind: kind)
             context.insert(target)
         }
-        target.amount = amount
+        let isConverted = account != currency
+        target.amount = accountAmount
+        target.accountCode = account
+        target.originalAmount = isConverted ? amount : nil
+        target.originalCode = isConverted ? currency : nil
         target.kind = kind
         target.note = trimmedNote
         target.category = category
-        // The sheet dismisses right away, so a `.sensoryFeedback` trigger on it would never fire.
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        dismiss()
+        target.date = date
+    }
+}
+
+private struct Conversion {
+    let account: String
+    let rate: Decimal?
+
+    func convert(_ amount: Decimal) -> Decimal? {
+        guard let rate else { return nil }
+        let converted = (amount * rate).rounded(scale: Money.fractionDigits(account))
+        return converted > 0 ? converted : nil
     }
 }
 
@@ -144,8 +213,8 @@ private struct CategoryField: View {
             isPicking = true
         } label: {
             HStack(spacing: 10) {
-                CategoryBadge(symbol: selection?.symbol ?? "questionmark", crayon: selection?.crayon ?? .cocoa, size: 32)
-                Text(selection?.name ?? String(localized: "Uncategorized"))
+                CategoryBadge(category: selection, size: 32)
+                Text(selection.displayName)
                     .font(.body.weight(.medium))
                     .lineLimit(1)
                 Spacer(minLength: 8)
@@ -159,8 +228,7 @@ private struct CategoryField: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Category")
-        .accessibilityValue(selection?.name ?? String(localized: "Uncategorized"))
-        .sensoryFeedback(.selection, trigger: selection)
+        .accessibilityValue(selection.displayName)
         .sheet(isPresented: $isPicking) {
             CategoryPicker(categories: categories, selection: $selection)
         }
@@ -173,54 +241,44 @@ private struct CategoryPicker: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 8)], spacing: 12) {
-                    ForEach(categories) { category in
-                        let isSelected = selection == category
-                        Button {
-                            selection = category
-                            dismiss()
-                        } label: {
-                            VStack(spacing: 6) {
-                                CategoryBadge(symbol: category.symbol, crayon: category.crayon, size: 48)
-                                    .overlay {
-                                        if isSelected {
-                                            SketchyEllipse(seed: 13).stroke(Palette.ink, lineWidth: 3).padding(-5)
-                                        }
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 8)], spacing: 12) {
+                ForEach(categories) { category in
+                    let isSelected = selection == category
+                    Button {
+                        selection = category
+                        Haptics.picked()
+                        dismiss()
+                    } label: {
+                        VStack(spacing: 6) {
+                            CategoryBadge(symbol: category.symbol, crayon: category.crayon, size: 48)
+                                .overlay {
+                                    if isSelected {
+                                        SketchyEllipse(seed: 13).stroke(Palette.ink, lineWidth: 3).padding(-5)
                                     }
-                                Text(category.name)
-                                    .font(.caption.weight(isSelected ? .bold : .regular))
-                                    .lineLimit(1)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                            .contentShape(.rect)
+                                }
+                            Text(category.name)
+                                .font(.caption.weight(isSelected ? .bold : .regular))
+                                .lineLimit(1)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(isSelected ? .isSelected : [])
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .contentShape(.rect)
                     }
-                }
-                .padding()
-            }
-            .foregroundStyle(Palette.ink)
-            .background { PaperBackground() }
-            .navigationTitle("Category")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark", role: .cancel) { dismiss() }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
+            .padding()
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .pickerSheet(Text("Category"))
     }
 }
 
 private struct Keypad: View {
     @Binding var text: String
-    private let rows: [[KeypadKey]] = [
+    let fractionDigits: Int
+    private static let rows: [[KeypadKey]] = [
         [.digit(7), .digit(8), .digit(9), .op(.divide)],
         [.digit(4), .digit(5), .digit(6), .op(.multiply)],
         [.digit(1), .digit(2), .digit(3), .op(.subtract)],
@@ -229,14 +287,17 @@ private struct Keypad: View {
 
     var body: some View {
         Grid(horizontalSpacing: 10, verticalSpacing: 10) {
-            ForEach(rows.indices, id: \.self) { row in
+            ForEach(Self.rows, id: \.self) { row in
                 GridRow {
-                    ForEach(rows[row], id: \.self) { key in
-                        KeyButton(key: key) { text = KeypadInput.apply(key, to: text) }
-                            .simultaneousGesture(
-                                LongPressGesture().onEnded { _ in
-                                    if key == .delete { text = "" }
-                                })
+                    ForEach(row, id: \.self) { key in
+                        let button = KeyButton(key: key) { text = KeypadInput.apply(key, to: text, fractionDigits: fractionDigits) }
+                        if key == .delete {
+                            button
+                                .simultaneousGesture(LongPressGesture().onEnded { _ in text = "" })
+                                .accessibilityAction(named: "Clear") { text = "" }
+                        } else {
+                            button
+                        }
                     }
                 }
             }
@@ -279,7 +340,7 @@ private struct KeyButton: View {
         case .digit(let digit): UInt64(digit + 1) &* 7
         case .dot: 101
         case .delete: 103
-        case .op(let op): 107 &+ UInt64(op.rawValue.unicodeScalars.first!.value)
+        case .op(let op): String(op.rawValue).stableSeed
         }
     }
 }

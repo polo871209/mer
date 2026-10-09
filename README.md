@@ -4,6 +4,6 @@
 
 <h1 align="center">Mer</h1>
 
-<p align="center">Your money, counted by a cat.</p>
+<p align="center">It's Mer's money. You just carry it.</p>
 
 Mer is a personal iPhone app for tracking expenses and income. Mer, a cat drawn in crayon, keeps the books and tells you how the month is going. Your entries stay in your iCloud account and sync between your devices.
