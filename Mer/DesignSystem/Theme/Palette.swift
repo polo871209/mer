@@ -12,10 +12,23 @@ enum Palette {
     static let balance = Color(.balance)
 }
 
-nonisolated enum Crayon: String, CaseIterable, Identifiable {
+nonisolated enum Crayon: String, CaseIterable, Identifiable, Codable {
     case butter, blush, sky, fur, sage, cocoa, lilac, tangerine
 
     var id: Self { self }
+
+    var title: LocalizedStringResource {
+        switch self {
+        case .butter: "Butter"
+        case .blush: "Blush"
+        case .sky: "Sky"
+        case .fur: "Fur"
+        case .sage: "Sage"
+        case .cocoa: "Cocoa"
+        case .lilac: "Lilac"
+        case .tangerine: "Tangerine"
+        }
+    }
 
     @MainActor var color: Color {
         switch self {

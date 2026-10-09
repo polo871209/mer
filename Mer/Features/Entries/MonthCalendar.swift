@@ -1,7 +1,6 @@
 import SwiftData
 import SwiftUI
 
-/// A month grid that marks days with entries in the current account, calls `pick` with the start of the tapped day, and then dismisses.
 struct MonthCalendar: View {
     let selection: Date?
     let pick: (Date) -> Void

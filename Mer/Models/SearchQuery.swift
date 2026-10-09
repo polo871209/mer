@@ -1,17 +1,14 @@
 import Foundation
 
-/// Typo-tolerant search that ignores case, accents, and character width.
 nonisolated struct SearchQuery {
     private let terms: [String]
 
-    /// Returns `nil` when `text` holds no search terms.
     init?(_ text: String) {
         let terms = text.split(whereSeparator: \.isWhitespace).map { Self.fold(String($0)) }
         guard !terms.isEmpty else { return nil }
         self.terms = terms
     }
 
-    /// True when every term is in one of `fields`, or `alsoMatches` accepts the term.
     func matches(_ fields: [String], alsoMatches: (String) -> Bool = { _ in false }) -> Bool {
         let folded = fields.map(Self.fold)
         let words = folded.flatMap { $0.split { !$0.isLetter && !$0.isNumber }.map(Array.init) }
@@ -36,15 +33,14 @@ nonisolated struct SearchQuery {
         }
     }
 
-    /// Smallest optimal string alignment distance between `term` and a prefix of `word`, so a half-typed word with a typo still matches.
     private static func prefixDistance(_ term: [Character], _ word: [Character], limit: Int) -> Int {
         let shortest = max(0, term.count - limit)
         let longest = min(word.count, term.count + limit)
         guard shortest <= longest else { return .max }
-        return (shortest...longest).map { distance(term, Array(word[..<$0])) }.min() ?? .max
+        return (shortest...longest).map { optimalStringAlignmentDistance(term, Array(word[..<$0])) }.min() ?? .max
     }
 
-    private static func distance(_ a: [Character], _ b: [Character]) -> Int {
+    private static func optimalStringAlignmentDistance(_ a: [Character], _ b: [Character]) -> Int {
         guard !a.isEmpty else { return b.count }
         guard !b.isEmpty else { return a.count }
         var table = [[Int]](repeating: [Int](repeating: 0, count: b.count + 1), count: a.count + 1)

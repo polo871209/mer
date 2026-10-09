@@ -3,6 +3,8 @@ import SwiftUI
 
 struct EntryEditor: View {
     private let entry: Entry?
+    private let presetCategoryID: UUID?
+    private let savedConversion: SavedConversion?
     @Environment(\.modelContext) private var context
     @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
     @AppStorage(DefaultsKey.otherCurrencies) private var otherCurrencies = ""
@@ -16,8 +18,10 @@ struct EntryEditor: View {
     @State private var date: Date
     @FocusState private var isEditingNote: Bool
 
-    init(entry: Entry?) {
+    init(entry: Entry?, presetCategoryID: UUID? = nil) {
         self.entry = entry
+        self.presetCategoryID = presetCategoryID
+        savedConversion = entry.flatMap(SavedConversion.init)
         _kind = State(initialValue: entry?.kind ?? .expense)
         _digits = State(initialValue: entry?.typedAmount.description ?? "")
         _currency = State(initialValue: entry?.typedCode ?? Money.mainCode)
@@ -31,8 +35,7 @@ struct EntryEditor: View {
     var body: some View {
         let accounts = Accounts(main: mainCurrency, storedOthers: otherCurrencies)
         let account = accounts.account(for: currency)
-        let fractionDigits = Money.fractionDigits(currency)
-        let amount = KeypadInput.amount(digits, fractionDigits: fractionDigits)
+        let amount = KeypadInput.amount(digits)
         let conversion = account == currency ? nil : Conversion(account: account, rate: savedOrLatestRate(to: account))
         let accountAmount = if let conversion { amount.flatMap(conversion.convert) } else { amount }
         NavigationStack {
@@ -42,7 +45,7 @@ struct EntryEditor: View {
                 }
                 .pickerStyle(.segmented)
 
-                amountDisplay(amount, fractionDigits: fractionDigits, conversion: conversion, accountAmount: accountAmount)
+                amountDisplay(amount, conversion: conversion, accountAmount: accountAmount)
 
                 HStack(spacing: 10) {
                     CategoryField(categories: choices, selection: $category)
@@ -67,7 +70,7 @@ struct EntryEditor: View {
                 Spacer(minLength: 0)
 
                 if !isEditingNote {
-                    Keypad(text: $digits, fractionDigits: fractionDigits)
+                    Keypad(text: $digits)
                 }
             }
             .padding()
@@ -86,7 +89,13 @@ struct EntryEditor: View {
                 if category?.kind != kind { category = choices.first }
             }
             .onAppear {
-                if entry == nil, category == nil { category = choices.first }
+                guard entry == nil, category == nil else { return }
+                if let preset = categories.first(where: { $0.uuid == presetCategoryID }) {
+                    category = preset
+                    kind = preset.kind
+                } else {
+                    category = choices.first
+                }
             }
             .task(id: currency) {
                 if account != currency { await ExchangeRates.shared.refreshIfStale() }
@@ -97,11 +106,11 @@ struct EntryEditor: View {
         }
     }
 
-    private func amountDisplay(_ amount: Decimal?, fractionDigits: Int, conversion: Conversion?, accountAmount: Decimal?) -> some View {
+    private func amountDisplay(_ amount: Decimal?, conversion: Conversion?, accountAmount: Decimal?) -> some View {
         VStack(spacing: 2) {
             expression
             if KeypadInput.hasOperator(digits) {
-                Text(verbatim: "= " + (KeypadInput.evaluate(digits)?.rounded(scale: fractionDigits).money(currency) ?? "?"))
+                Text(verbatim: "= " + (KeypadInput.evaluate(digits)?.rounded(scale: Money.fractionDigits).money(currency) ?? "?"))
                     .font(.crayon(18, relativeTo: .headline, bold: false))
                     .foregroundStyle(amount == nil ? Palette.expense : Palette.pencil)
             }
@@ -134,8 +143,8 @@ struct EntryEditor: View {
     }
 
     private func savedOrLatestRate(to account: String) -> Decimal? {
-        if let entry, let original = entry.originalAmount, original > 0, entry.originalCode == currency, entry.accountCode == account {
-            return entry.amount / original
+        if let savedConversion, savedConversion.code == currency, savedConversion.account == account {
+            return savedConversion.rate
         }
         return ExchangeRates.shared.rate(from: currency, to: account)
     }
@@ -192,13 +201,26 @@ struct EntryEditor: View {
     }
 }
 
+private struct SavedConversion {
+    let code: String
+    let account: String
+    let rate: Decimal
+
+    init?(_ entry: Entry) {
+        guard let original = entry.originalAmount, original > 0, let code = entry.originalCode else { return nil }
+        self.code = code
+        account = entry.accountCode
+        rate = entry.amount / original
+    }
+}
+
 private struct Conversion {
     let account: String
     let rate: Decimal?
 
     func convert(_ amount: Decimal) -> Decimal? {
         guard let rate else { return nil }
-        let converted = (amount * rate).rounded(scale: Money.fractionDigits(account))
+        let converted = (amount * rate).rounded(scale: Money.fractionDigits)
         return converted > 0 ? converted : nil
     }
 }
@@ -213,7 +235,7 @@ private struct CategoryField: View {
             isPicking = true
         } label: {
             HStack(spacing: 10) {
-                CategoryBadge(category: selection, size: 32)
+                CategoryBadge(symbol: selection.displaySymbol, crayon: selection.displayCrayon, size: 32)
                 Text(selection.displayName)
                     .font(.body.weight(.medium))
                     .lineLimit(1)
@@ -277,7 +299,6 @@ private struct CategoryPicker: View {
 
 private struct Keypad: View {
     @Binding var text: String
-    let fractionDigits: Int
     private static let rows: [[KeypadKey]] = [
         [.digit(7), .digit(8), .digit(9), .op(.divide)],
         [.digit(4), .digit(5), .digit(6), .op(.multiply)],
@@ -290,7 +311,7 @@ private struct Keypad: View {
             ForEach(Self.rows, id: \.self) { row in
                 GridRow {
                     ForEach(row, id: \.self) { key in
-                        let button = KeyButton(key: key) { text = KeypadInput.apply(key, to: text, fractionDigits: fractionDigits) }
+                        let button = KeyButton(key: key) { text = KeypadInput.apply(key, to: text) }
                         if key == .delete {
                             button
                                 .simultaneousGesture(LongPressGesture().onEnded { _ in text = "" })

@@ -31,15 +31,22 @@ nonisolated struct SketchyRect: Shape {
     var wobble: CGFloat = 1.4
     var seed: UInt64 = 1
 
+    private struct Side {
+        let from: CGPoint
+        let to: CGPoint
+        let corner: CGPoint
+        let next: CGPoint
+    }
+
     func path(in rect: CGRect) -> Path {
         var rng = SeededRandom(seed: seed)
         let r = min(cornerRadius, rect.width / 2, rect.height / 2)
         let (x0, x1, y0, y1) = (rect.minX, rect.maxX, rect.minY, rect.maxY)
-        let sides: [(from: CGPoint, to: CGPoint, corner: CGPoint, next: CGPoint)] = [
-            (CGPoint(x: x0 + r, y: y0), CGPoint(x: x1 - r, y: y0), CGPoint(x: x1, y: y0), CGPoint(x: x1, y: y0 + r)),
-            (CGPoint(x: x1, y: y0 + r), CGPoint(x: x1, y: y1 - r), CGPoint(x: x1, y: y1), CGPoint(x: x1 - r, y: y1)),
-            (CGPoint(x: x1 - r, y: y1), CGPoint(x: x0 + r, y: y1), CGPoint(x: x0, y: y1), CGPoint(x: x0, y: y1 - r)),
-            (CGPoint(x: x0, y: y1 - r), CGPoint(x: x0, y: y0 + r), CGPoint(x: x0, y: y0), CGPoint(x: x0 + r, y: y0)),
+        let sides = [
+            Side(from: CGPoint(x: x0 + r, y: y0), to: CGPoint(x: x1 - r, y: y0), corner: CGPoint(x: x1, y: y0), next: CGPoint(x: x1, y: y0 + r)),
+            Side(from: CGPoint(x: x1, y: y0 + r), to: CGPoint(x: x1, y: y1 - r), corner: CGPoint(x: x1, y: y1), next: CGPoint(x: x1 - r, y: y1)),
+            Side(from: CGPoint(x: x1 - r, y: y1), to: CGPoint(x: x0 + r, y: y1), corner: CGPoint(x: x0, y: y1), next: CGPoint(x: x0, y: y1 - r)),
+            Side(from: CGPoint(x: x0, y: y1 - r), to: CGPoint(x: x0, y: y0 + r), corner: CGPoint(x: x0, y: y0), next: CGPoint(x: x0 + r, y: y0)),
         ]
         var path = Path()
         path.move(to: sides[0].from.nudged(&rng, wobble))
@@ -151,7 +158,6 @@ struct PaperBackground: View {
 }
 
 extension View {
-    /// The background of every screen and sheet. It also hides the system background of a `List` or `Form`, so the paper shows through.
     func paperBackground() -> some View {
         scrollContentBackground(.hidden).background { PaperBackground() }
     }

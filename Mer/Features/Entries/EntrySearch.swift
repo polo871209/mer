@@ -3,13 +3,11 @@ import Foundation
 struct EntrySearch {
     private let query: SearchQuery
 
-    /// Returns `nil` when `text` holds no search terms.
     init?(_ text: String) {
         guard let query = SearchQuery(text) else { return nil }
         self.query = query
     }
 
-    /// An entry matches when every term matches its amount, its category name, or its note.
     func matches(_ entry: Entry) -> Bool {
         let amounts = ([entry.amount] + [entry.originalAmount].compactMap(\.self)).flatMap(Self.amountTexts)
         return query.matches([entry.note, entry.category.displayName]) { term in

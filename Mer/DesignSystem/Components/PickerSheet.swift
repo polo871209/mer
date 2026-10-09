@@ -1,7 +1,6 @@
 import SwiftUI
 
 extension View {
-    /// The layout every picker and list sheet uses: inline title, close button, paper background, and medium and large heights.
     func pickerSheet(_ title: Text) -> some View {
         modifier(PickerSheet(title: title))
     }

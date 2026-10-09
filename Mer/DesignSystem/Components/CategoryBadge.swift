@@ -18,9 +18,3 @@ struct CategoryBadge: View {
             .accessibilityHidden(true)
     }
 }
-
-extension CategoryBadge {
-    init(category: EntryCategory?, size: CGFloat = 40) {
-        self.init(symbol: category.displaySymbol, crayon: category.displayCrayon, size: size)
-    }
-}

@@ -1,7 +1,6 @@
 import Foundation
 
 nonisolated struct CategorySlice: Identifiable {
-    /// The category's `uuid`, or `nil` for entries without a category.
     let id: UUID?
     let name: String
     let symbol: String
@@ -59,7 +58,7 @@ struct PeriodSummary {
     }
 }
 
-nonisolated enum MerMood: Equatable {
+nonisolated enum MerMood {
     case waiting, happy, treats
 
     init(summary: PeriodSummary) {
