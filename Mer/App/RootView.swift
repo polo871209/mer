@@ -24,22 +24,23 @@ struct RootView: View {
     @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
     @State private var tab = AppTab.home
     @State private var newEntry: NewEntryRequest?
+    @State private var tabBarHeight: CGFloat = 0
 
     var body: some View {
         // The system tab bar cannot hold a separate add button, so each tab hides it and `MerTabBar` draws the bar.
         TabView(selection: $tab) {
-            Tab(value: AppTab.home) {
-                DashboardView().toolbarVisibility(.hidden, for: .tabBar)
-            }
-            Tab(value: AppTab.report) {
-                ReportTab().toolbarVisibility(.hidden, for: .tabBar)
-            }
-            Tab(value: AppTab.settings) {
-                SettingsView().toolbarVisibility(.hidden, for: .tabBar)
-            }
+            Tab(value: AppTab.home) { tabContent(DashboardView(), gap: 0) }
+            Tab(value: AppTab.report) { tabContent(ReportTab(), gap: 0) }
+            Tab(value: AppTab.settings) { tabContent(SettingsView(), gap: 24) }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .overlay(alignment: .bottom) {
             MerTabBar(selection: $tab) { newEntry = NewEntryRequest(categoryID: nil) }
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.height
+                } action: {
+                    tabBarHeight = $0
+                }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .sheet(item: $newEntry) { request in
             EntryEditor(.new(categoryID: request.categoryID)).id(request.id)
@@ -57,6 +58,13 @@ struct RootView: View {
         .modifier(CurrentTripSync())
         .modifier(WidgetCategorySync())
         .modifier(AppLockModifier())
+    }
+
+    // A safe area inset outside a `NavigationStack` does not reach a `Form`, and a nested `.contentMargins` replaces this one.
+    private func tabContent(_ content: some View, gap: CGFloat) -> some View {
+        content
+            .toolbarVisibility(.hidden, for: .tabBar)
+            .contentMargins(.bottom, tabBarHeight + gap)
     }
 }
 

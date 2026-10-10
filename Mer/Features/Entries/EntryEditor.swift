@@ -5,6 +5,26 @@ enum EntryDraft {
     case edit(Entry)
     case new(categoryID: UUID? = nil, trip: Trip? = nil)
     case claim(Decimal, trip: Trip)
+
+    fileprivate var entry: Entry? {
+        if case .edit(let entry) = self { entry } else { nil }
+    }
+
+    fileprivate var presetCategoryID: UUID? {
+        if case .new(let categoryID, _) = self { categoryID } else { nil }
+    }
+
+    fileprivate var presetTrip: Trip? {
+        switch self {
+        case .edit: nil
+        case .new(_, let trip): trip
+        case .claim(_, let trip): trip
+        }
+    }
+
+    fileprivate var claim: Decimal? {
+        if case .claim(let amount, _) = self { amount } else { nil }
+    }
 }
 
 struct EntryEditor: View {
@@ -30,14 +50,11 @@ struct EntryEditor: View {
     @FocusState private var isEditingNote: Bool
 
     init(_ draft: EntryDraft) {
-        let (entry, presetCategoryID, presetTrip, claim): (Entry?, UUID?, Trip?, Decimal?) =
-            switch draft {
-            case .edit(let entry): (entry, nil, nil, nil)
-            case .new(let categoryID, let trip): (nil, categoryID, trip, nil)
-            case .claim(let amount, let trip): (nil, nil, trip, amount)
-            }
+        let entry = draft.entry
+        let presetTrip = draft.presetTrip
+        let claim = draft.claim
         self.entry = entry
-        self.presetCategoryID = presetCategoryID
+        presetCategoryID = draft.presetCategoryID
         self.presetTrip = presetTrip
         isClaim = claim != nil
         savedConversion = entry.flatMap(SavedConversion.init)
@@ -110,7 +127,7 @@ struct EntryEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .editorToolbar(
                 canSave: amount != nil && accountAmount != nil,
-                save: { save(amount, accountAmount: accountAmount, account: account, main: accounts.main) },
+                save: { save(amount, accountAmount: accountAmount, account: account) },
                 deletion: entry.map { entry in
                     EditorDeletion(question: "Delete this entry?", confirmTitle: "Delete Entry") {
                         context.delete(entry)
@@ -157,7 +174,7 @@ struct EntryEditor: View {
         return ExchangeRates.shared.rate(from: currency, to: account)
     }
 
-    private func save(_ amount: Decimal?, accountAmount: Decimal?, account: String, main: String) {
+    private func save(_ amount: Decimal?, accountAmount: Decimal?, account: String) {
         guard let amount, let accountAmount else { return }
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let target: Entry
@@ -167,29 +184,12 @@ struct EntryEditor: View {
             target = Entry(amount: accountAmount, accountCode: account, kind: kind)
             context.insert(target)
         }
-        let isConverted = account != currency
-        let mainSnapshot = mainSnapshot(of: target, accountAmount: accountAmount, account: account, main: main)
-        target.mainAmount = mainSnapshot?.amount
-        target.mainCode = mainSnapshot?.code
-        target.amount = accountAmount
-        target.accountCode = account
-        target.originalAmount = isConverted ? amount : nil
-        target.originalCode = isConverted ? currency : nil
+        target.setAmount(amount, currency: currency, accountAmount: accountAmount, account: account, trip: trip)
         target.kind = kind
         target.note = trimmedNote
         target.category = category
         target.date = date
-        target.trip = trip
         try? context.save()
-    }
-
-    private func mainSnapshot(of target: Entry, accountAmount: Decimal, account: String, main: String) -> (amount: Decimal, code: String)? {
-        guard trip != nil, account != main else { return nil }
-        if target.mainCode == main, target.accountCode == account, target.amount == accountAmount, let saved = target.mainAmount {
-            return (saved, main)
-        }
-        guard let rate = ExchangeRates.shared.rate(from: account, to: main) else { return nil }
-        return ((accountAmount * rate).rounded(scale: Money.fractionDigits), main)
     }
 }
 
@@ -283,17 +283,6 @@ private struct SavedConversion {
     }
 }
 
-private struct Conversion {
-    let account: String
-    let rate: Decimal?
-
-    func convert(_ amount: Decimal) -> Decimal? {
-        guard let rate else { return nil }
-        let converted = (amount * rate).rounded(scale: Money.fractionDigits)
-        return converted > 0 ? converted : nil
-    }
-}
-
 private struct CategoryField: View {
     let categories: [EntryCategory]
     @Binding var selection: EntryCategory?
@@ -323,88 +312,6 @@ private struct CategoryField: View {
         .sheet(isPresented: $isPicking) {
             CategoryPicker(categories: categories, selection: $selection)
         }
-    }
-}
-
-private struct TripField: View {
-    let trips: [Trip]
-    @Binding var selection: Trip?
-    @State private var isPicking = false
-
-    var body: some View {
-        Button {
-            isPicking = true
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "suitcase.rolling")
-                if let selection {
-                    Text(selection.name)
-                        .font(.body.weight(.medium))
-                        .lineLimit(1)
-                }
-            }
-            .frame(maxWidth: 140)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background {
-                SketchyBackground(fill: selection == nil ? Palette.card : Crayon.sky.color.opacity(0.35), seed: 49, cornerRadius: 10)
-            }
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .fixedSize()
-        .accessibilityLabel("Trip")
-        .accessibilityValue(selection?.name ?? String(localized: "None"))
-        .sheet(isPresented: $isPicking) {
-            TripPicker(trips: trips, selection: $selection)
-        }
-    }
-}
-
-private struct TripPicker: View {
-    let trips: [Trip]
-    @Binding var selection: Trip?
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        List {
-            Section {
-                row(nil)
-            } footer: {
-                Text("Trip entries stay out of the budget.")
-            }
-            ForEach(TripStatus.allCases, id: \.self) { status in
-                let matches = trips.filter { $0.status() == status }
-                if !matches.isEmpty {
-                    Section {
-                        ForEach(matches) { row($0) }
-                    } header: {
-                        Text(status.title)
-                    }
-                }
-            }
-        }
-        .pickerSheet(Text("Trip"))
-    }
-
-    private func row(_ trip: Trip?) -> some View {
-        let isSelected = selection == trip
-        return Button {
-            selection = trip
-            Haptics.picked()
-            dismiss()
-        } label: {
-            HStack {
-                Text(trip?.name ?? String(localized: "None"))
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark").fontWeight(.semibold)
-                }
-            }
-            .foregroundStyle(Palette.ink)
-            .contentShape(.rect)
-        }
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -445,103 +352,6 @@ private struct CategoryPicker: View {
             .padding()
         }
         .pickerSheet(Text("Category"))
-    }
-}
-
-private struct Keypad: View {
-    @Binding var text: String
-    private static let rows: [[KeypadKey]] = [
-        [.digit(7), .digit(8), .digit(9), .op(.divide)],
-        [.digit(4), .digit(5), .digit(6), .op(.multiply)],
-        [.digit(1), .digit(2), .digit(3), .op(.subtract)],
-        [.dot, .digit(0), .delete, .op(.add)],
-    ]
-
-    var body: some View {
-        Grid(horizontalSpacing: 10, verticalSpacing: 10) {
-            ForEach(Self.rows, id: \.self) { row in
-                GridRow {
-                    ForEach(row, id: \.self) { key in
-                        let button = KeyButton(key: key) { text = KeypadInput.apply(key, to: text) }
-                        if key == .delete {
-                            button
-                                .simultaneousGesture(LongPressGesture().onEnded { _ in text = "" })
-                                .accessibilityAction(named: "Clear") { text = "" }
-                        } else {
-                            button
-                        }
-                    }
-                }
-            }
-        }
-        .sensoryFeedback(.selection, trigger: text)
-    }
-}
-
-private struct KeyButton: View {
-    let key: KeypadKey
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            label
-                .font(.crayon(26, relativeTo: .title2))
-                .foregroundStyle(Palette.ink)
-                .frame(maxWidth: .infinity, minHeight: 54)
-                .background { SketchyBackground(fill: isOperator ? Crayon.butter.color.opacity(0.35) : Palette.card, seed: seed, cornerRadius: 14) }
-        }
-        .buttonStyle(PressScale())
-    }
-
-    @ViewBuilder private var label: some View {
-        switch key {
-        case .digit(let digit): Text(verbatim: "\(digit)")
-        case .dot: Text(verbatim: Locale.current.decimalSeparator ?? ".").accessibilityLabel("Decimal point")
-        case .delete: Image(systemName: "delete.left").accessibilityLabel("Delete")
-        // Chalkboard draws "×" and "−" as scribbles, so operators use SF Symbols.
-        case .op(let op): Image(systemName: op.symbolName).fontWeight(.semibold).accessibilityLabel(op.label)
-        }
-    }
-
-    private var isOperator: Bool {
-        if case .op = key { true } else { false }
-    }
-
-    private var seed: UInt64 {
-        switch key {
-        case .digit(let digit): UInt64(digit + 1) &* 7
-        case .dot: 101
-        case .delete: 103
-        case .op(let op): String(op.rawValue).stableSeed
-        }
-    }
-}
-
-extension KeypadOperator {
-    fileprivate var symbolName: String {
-        switch self {
-        case .add: "plus"
-        case .subtract: "minus"
-        case .multiply: "multiply"
-        case .divide: "divide"
-        }
-    }
-
-    fileprivate var label: LocalizedStringKey {
-        switch self {
-        case .add: "Plus"
-        case .subtract: "Minus"
-        case .multiply: "Times"
-        case .divide: "Divided by"
-        }
-    }
-}
-
-private struct PressScale: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.93 : 1)
-            .animation(.snappy(duration: 0.15), value: configuration.isPressed)
     }
 }
 

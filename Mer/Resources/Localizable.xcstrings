@@ -36,6 +36,9 @@
     "Accounts" : {
 
     },
+    "Add ${amount} to ${category}" : {
+
+    },
     "Add Account" : {
 
     },
@@ -55,6 +58,9 @@
 
     },
     "Add Trip Entry" : {
+
+    },
+    "Added %lld entries." : {
 
     },
     "Almost at the budget. Mer is watching." : {
@@ -249,7 +255,16 @@
     "Home shows how much of the budget is left this month." : {
 
     },
-    "How much did you spend?" : {
+    "How much?" : {
+
+    },
+    "Import CSV" : {
+
+    },
+    "Import Done" : {
+
+    },
+    "Import Failed" : {
 
     },
     "Income" : {
@@ -276,20 +291,51 @@
     "Lock with Face ID" : {
 
     },
-    "Log ${amount} for ${category}" : {
-
-    },
     "Log Claim" : {
-
-    },
-    "Log Expense" : {
 
     },
     "Log some money in or out to see the trend." : {
 
     },
-    "Logged %@. Mer wrote it down." : {
-
+    "Logged %@ for %@ on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@ for %2$@ on %3$@."
+          }
+        }
+      }
+    },
+    "Logged %@ for %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@ for %2$@."
+          }
+        }
+      }
+    },
+    "Logged %@ from %@ on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@ from %2$@ on %3$@."
+          }
+        }
+      }
+    },
+    "Logged %@ from %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@ from %2$@."
+          }
+        }
+      }
     },
     "Looking good. Mer approves." : {
 
@@ -300,14 +346,21 @@
     "Mer" : {
 
     },
-    "Mer covers your numbers in the app switcher and asks for Face ID when you come back." : {
-
-    },
     "Mer entries.csv" : {
 
     },
     "Mer found no expenses in this period." : {
 
+    },
+    "Mer has no exchange rate from %@ to %@ yet. Connect to the internet and try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Mer has no exchange rate from %1$@ to %2$@ yet. Connect to the internet and try again."
+          }
+        }
+      }
     },
     "Mer is guarding your money" : {
 
@@ -319,6 +372,9 @@
 
     },
     "Mer the cat" : {
+
+    },
+    "Mer wrote it down." : {
 
     },
     "Minus" : {
@@ -426,9 +482,6 @@
     "Privacy" : {
 
     },
-    "Put the + button on the side your thumb reaches." : {
-
-    },
     "Recent" : {
 
     },
@@ -477,6 +530,19 @@
     "Side Gig" : {
 
     },
+    "Skipped %lld entries that Mer already has." : {
+
+    },
+    "Skipped %lld rows that Mer cannot read. The first is on line %lld." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Skipped %1$lld rows that Mer cannot read. The first is on line %2$lld."
+          }
+        }
+      }
+    },
     "Sky" : {
 
     },
@@ -520,6 +586,9 @@
 
     },
     "The budget is used up. Mer is hiding the treats." : {
+
+    },
+    "The file has no %@ column. Mer reads the columns that Export CSV writes." : {
 
     },
     "Times" : {
@@ -576,7 +645,10 @@
     "Until %@" : {
 
     },
-    "Writes an expense into Mer without opening the app." : {
+    "Which category?" : {
+
+    },
+    "Writes an expense or income into Mer without opening the app." : {
 
     },
     "Year" : {
