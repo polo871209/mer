@@ -61,6 +61,7 @@ struct SettingsView: View {
                 Section("Privacy") {
                     Toggle("Lock with Face ID", isOn: $lockEnabled)
                         .disabled(!lockEnabled && !canAuthenticate)
+                    Link("Privacy Policy", destination: URL(string: "https://polo871209.github.io/mer/privacy/")!)
                 }
 
                 Section("Data") {

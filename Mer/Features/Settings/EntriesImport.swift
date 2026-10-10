@@ -19,7 +19,6 @@ nonisolated enum ImportError: LocalizedError {
     }
 }
 
-/// Reads the CSV that `EntriesCSV` writes. A row that matches an entry already in the store is skipped, so importing the same file twice adds nothing.
 enum EntriesImport {
     static func run(_ text: String, into context: ModelContext) throws -> ImportSummary {
         var rows = CSV.parse(text)

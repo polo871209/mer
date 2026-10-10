@@ -36,6 +36,9 @@
     "Accounts" : {
 
     },
+    "Add ${amount} to ${category}" : {
+
+    },
     "Add Account" : {
 
     },
@@ -252,7 +255,7 @@
     "Home shows how much of the budget is left this month." : {
 
     },
-    "How much did you spend?" : {
+    "How much?" : {
 
     },
     "Import CSV" : {
@@ -288,20 +291,51 @@
     "Lock with Face ID" : {
 
     },
-    "Log ${amount} for ${category}" : {
-
-    },
     "Log Claim" : {
-
-    },
-    "Log Expense" : {
 
     },
     "Log some money in or out to see the trend." : {
 
     },
-    "Logged %@. Mer wrote it down." : {
-
+    "Logged %@ for %@ on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@ for %2$@ on %3$@."
+          }
+        }
+      }
+    },
+    "Logged %@ for %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@ for %2$@."
+          }
+        }
+      }
+    },
+    "Logged %@ from %@ on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@ from %2$@ on %3$@."
+          }
+        }
+      }
+    },
+    "Logged %@ from %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@ from %2$@."
+          }
+        }
+      }
     },
     "Looking good. Mer approves." : {
 
@@ -312,14 +346,21 @@
     "Mer" : {
 
     },
-    "Mer covers your numbers in the app switcher and asks for Face ID when you come back." : {
-
-    },
     "Mer entries.csv" : {
 
     },
     "Mer found no expenses in this period." : {
 
+    },
+    "Mer has no exchange rate from %@ to %@ yet. Connect to the internet and try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Mer has no exchange rate from %1$@ to %2$@ yet. Connect to the internet and try again."
+          }
+        }
+      }
     },
     "Mer is guarding your money" : {
 
@@ -331,6 +372,9 @@
 
     },
     "Mer the cat" : {
+
+    },
+    "Mer wrote it down." : {
 
     },
     "Minus" : {
@@ -438,7 +482,7 @@
     "Privacy" : {
 
     },
-    "Put the + button on the side your thumb reaches." : {
+    "Privacy Policy" : {
 
     },
     "Recent" : {
@@ -604,7 +648,10 @@
     "Until %@" : {
 
     },
-    "Writes an expense into Mer without opening the app." : {
+    "Which category?" : {
+
+    },
+    "Writes an expense or income into Mer without opening the app." : {
 
     },
     "Year" : {

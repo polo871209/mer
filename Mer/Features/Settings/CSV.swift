@@ -1,12 +1,9 @@
-import Foundation
-
 nonisolated enum CSV {
     /// Builds RFC 4180 text with a UTF-8 byte order mark, so Excel reads non-ASCII text correctly.
     static func make(_ rows: [[String]]) -> String {
         "\u{FEFF}" + rows.map { $0.map(escape).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n"
     }
 
-    /// Reads RFC 4180 text, as written by `make`, into rows of fields. Blank lines are dropped.
     static func parse(_ text: String) -> [[String]] {
         var rows: [[String]] = []
         var row: [String] = []
