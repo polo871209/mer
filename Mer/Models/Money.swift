@@ -42,6 +42,10 @@ nonisolated struct Accounts {
         self.init(main: main, others: storedOthers.split(separator: ",").map(String.init))
     }
 
+    static var stored: Accounts {
+        Accounts(main: Money.mainCode, storedOthers: UserDefaults.standard.string(forKey: DefaultsKey.otherCurrencies) ?? "")
+    }
+
     var storedOthers: String { others.joined(separator: ",") }
 
     var all: [String] { [main] + others }

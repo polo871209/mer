@@ -5,12 +5,16 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
+    @AppStorage(DefaultsKey.otherCurrencies) private var otherCurrencies = ""
     @AppStorage(DefaultsKey.lockEnabled) private var lockEnabled = false
     @AppStorage(DefaultsKey.addButtonOnLeft) private var addButtonOnLeft = false
     @AppStorage(DefaultsKey.budgetEnabled) private var budgetEnabled = false
     @AppStorage(DefaultsKey.monthlyBudget) private var monthlyBudget = 0.0
     @Query(Self.firstEntry) private var entries: [Entry]
     @State private var canAuthenticate = false
+    @State private var isImporting = false
+    @State private var importResult: ImportResult?
+    @Environment(\.modelContext) private var context
 
     private static var firstEntry: FetchDescriptor<Entry> {
         var descriptor = FetchDescriptor<Entry>()
@@ -47,27 +51,20 @@ struct SettingsView: View {
                     NavigationLink("Trips") { TripsView() }
                 }
 
-                Section {
+                Section("Layout") {
                     Picker("Add button", selection: $addButtonOnLeft) {
                         Text("Right").tag(false)
                         Text("Left").tag(true)
                     }
-                } header: {
-                    Text("Layout")
-                } footer: {
-                    Text("Put the + button on the side your thumb reaches.")
                 }
 
-                Section {
+                Section("Privacy") {
                     Toggle("Lock with Face ID", isOn: $lockEnabled)
                         .disabled(!lockEnabled && !canAuthenticate)
-                } header: {
-                    Text("Privacy")
-                } footer: {
-                    Text("Mer covers your numbers in the app switcher and asks for Face ID when you come back.")
                 }
 
                 Section("Data") {
+                    Button("Import CSV", systemImage: "square.and.arrow.down") { isImporting = true }
                     ShareLink(item: EntriesCSV(), preview: SharePreview("Mer entries.csv")) {
                         Label("Export CSV", systemImage: "square.and.arrow.up")
                     }
@@ -76,12 +73,61 @@ struct SettingsView: View {
             }
             .paperBackground()
             .toolbarVisibility(.hidden, for: .navigationBar)
+            .fileImporter(isPresented: $isImporting, allowedContentTypes: [.commaSeparatedText]) { result in
+                importResult = ImportResult(importing: result, into: context)
+                if case .success(let summary) = importResult?.outcome {
+                    var accounts = Accounts(main: mainCurrency, storedOthers: otherCurrencies)
+                    for code in summary.accountCodes.sorted() { accounts = accounts.adding(code) }
+                    otherCurrencies = accounts.storedOthers
+                    Haptics.saved()
+                }
+            }
+            .alert(importResult?.title ?? "", item: $importResult) { _ in
+            } message: { result in
+                Text(result.message)
+            }
         }
         .task { canAuthenticate = LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) }
     }
 
     private var budgetSummary: String {
         MonthlyBudget.limit(isOn: budgetEnabled, stored: monthlyBudget)?.money(mainCurrency) ?? String(localized: "Off")
+    }
+}
+
+private struct ImportResult {
+    let outcome: Result<ImportSummary, any Error>
+
+    init(importing file: Result<URL, any Error>, into context: ModelContext) {
+        outcome = Result {
+            let url = try file.get()
+            let isScoped = url.startAccessingSecurityScopedResource()
+            defer { if isScoped { url.stopAccessingSecurityScopedResource() } }
+            return try EntriesImport.run(String(contentsOf: url, encoding: .utf8), into: context)
+        }
+    }
+
+    var title: String {
+        switch outcome {
+        case .success: String(localized: "Import Done")
+        case .failure: String(localized: "Import Failed")
+        }
+    }
+
+    var message: String {
+        switch outcome {
+        case .success(let summary):
+            var lines = [String(localized: "Added \(summary.added) entries.")]
+            if summary.duplicates > 0 {
+                lines.append(String(localized: "Skipped \(summary.duplicates) entries that Mer already has."))
+            }
+            if let first = summary.invalidLines.first {
+                lines.append(String(localized: "Skipped \(summary.invalidLines.count) rows that Mer cannot read. The first is on line \(first)."))
+            }
+            return lines.joined(separator: "\n")
+        case .failure(let error):
+            return error.localizedDescription
+        }
     }
 }
 
