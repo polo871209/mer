@@ -15,3 +15,6 @@ clean-sim:
     xcrun simctl terminate booted com.polo.Mer 2>/dev/null || true
     rm -rf "$group/Library/Application Support/"default.store* "$group/Library/Application Support/.default_SUPPORT"
     echo "Deleted the Mer store in $group"
+
+skills:
+    npx -y skills update swiftui-pro swiftdata-pro -p -y

@@ -20,6 +20,7 @@ struct PeriodPicker: View {
                             .font(.caption.weight(.bold))
                             .foregroundStyle(Palette.pencil)
                     }
+                    .frame(minHeight: 44)
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)

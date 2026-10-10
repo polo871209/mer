@@ -1,6 +1,5 @@
 import Foundation
 
-/// A category as the widget sees it. Mer writes the list to the App Group, because the widget cannot open the SwiftData store.
 nonisolated struct CategoryShortcut: Codable, Hashable, Identifiable, Sendable {
     let id: UUID
     let name: String

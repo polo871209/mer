@@ -87,7 +87,9 @@ private struct DayGrid: View {
         self.month = month
         self.selection = selection
         self.pick = pick
-        _entries = Query(filter: #Predicate<Entry> { $0.accountCode == account && $0.date >= start && $0.date < end })
+        var descriptor = FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == account && $0.date >= start && $0.date < end })
+        descriptor.propertiesToFetch = [\.date]
+        _entries = Query(descriptor)
     }
 
     var body: some View {

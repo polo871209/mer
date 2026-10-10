@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 extension View {
     func followsCurrentPeriod(_ date: Binding<Date>, period: Period) -> some View {

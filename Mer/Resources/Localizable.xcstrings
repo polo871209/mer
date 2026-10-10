@@ -7,6 +7,32 @@
     "%@" : {
 
     },
+    "%@ %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%@ left of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ left of %2$@"
+          }
+        }
+      }
+    },
+    "0" : {
+
+    },
+    "A claimable trip shows what is left to claim back." : {
+
+    },
     "Accounts" : {
 
     },
@@ -25,10 +51,22 @@
     "Add note" : {
 
     },
+    "Add Trip" : {
+
+    },
+    "Add Trip Entry" : {
+
+    },
+    "Almost at the budget. Mer is watching." : {
+
+    },
     "Amount" : {
 
     },
     "Amount, category, or note" : {
+
+    },
+    "Asks to end the trip" : {
 
     },
     "Average spent per day" : {
@@ -49,6 +87,12 @@
     "Blush" : {
 
     },
+    "Budget" : {
+
+    },
+    "Budget %@" : {
+
+    },
     "Butter" : {
 
     },
@@ -61,10 +105,25 @@
     "Change Currency" : {
 
     },
+    "Claim" : {
+
+    },
+    "Claimable" : {
+
+    },
+    "Claimed" : {
+
+    },
     "Clear" : {
 
     },
     "Cocoa" : {
+
+    },
+    "Counts in budget" : {
+
+    },
+    "Counts spending in your main account, %@." : {
 
     },
     "Crayon" : {
@@ -103,6 +162,12 @@
     "Delete this entry?" : {
 
     },
+    "Delete this trip?" : {
+
+    },
+    "Delete Trip" : {
+
+    },
     "Deleting a category keeps its entries. They show as Uncategorized." : {
 
     },
@@ -112,10 +177,31 @@
     "Done" : {
 
     },
+    "Edit" : {
+
+    },
     "Edit Category" : {
 
     },
     "Edit Entry" : {
+
+    },
+    "Edit Trip" : {
+
+    },
+    "End date" : {
+
+    },
+    "End this trip?" : {
+
+    },
+    "End Trip" : {
+
+    },
+    "Ended" : {
+
+    },
+    "Ends" : {
 
     },
     "Entries" : {
@@ -128,6 +214,9 @@
 
     },
     "Food" : {
+
+    },
+    "From %@" : {
 
     },
     "Fun" : {
@@ -151,7 +240,13 @@
     "Home" : {
 
     },
+    "Home and Report go back to your budget." : {
+
+    },
     "Home and Report show the main account. Money in a currency without its own account converts into the main account." : {
+
+    },
+    "Home shows how much of the budget is left this month." : {
 
     },
     "How much did you spend?" : {
@@ -164,6 +259,9 @@
 
     },
     "It's Mer's money. You just carry it." : {
+
+    },
+    "Its entries stay, and count in the budget again." : {
 
     },
     "Layout" : {
@@ -179,6 +277,9 @@
 
     },
     "Log ${amount} for ${category}" : {
+
+    },
+    "Log Claim" : {
 
     },
     "Log Expense" : {
@@ -211,6 +312,9 @@
     "Mer is guarding your money" : {
 
     },
+    "Mer is on a trip. Spending here stays out of the budget." : {
+
+    },
     "Mer looked everywhere, even in the bowl." : {
 
     },
@@ -229,6 +333,9 @@
     "Month by month" : {
 
     },
+    "Monthly budget" : {
+
+    },
     "More out than in. Mer says treats cost money too." : {
 
     },
@@ -241,7 +348,13 @@
     "New Category" : {
 
     },
+    "New entries on this trip start in this currency." : {
+
+    },
     "New Entry" : {
+
+    },
+    "New Trip" : {
 
     },
     "Next Month" : {
@@ -262,6 +375,9 @@
     "No spending" : {
 
     },
+    "None" : {
+
+    },
     "Note" : {
 
     },
@@ -269,6 +385,12 @@
 
     },
     "Nothing logged yet. Mer is waiting in the bowl." : {
+
+    },
+    "Off" : {
+
+    },
+    "On Trip" : {
 
     },
     "Other" : {
@@ -280,7 +402,16 @@
     "Other Income" : {
 
     },
+    "Outstanding" : {
+
+    },
     "Period" : {
+
+    },
+    "Pets" : {
+
+    },
+    "Planned" : {
 
     },
     "Plus" : {
@@ -307,6 +438,9 @@
     "Removed" : {
 
     },
+    "Rent" : {
+
+    },
     "Report" : {
 
     },
@@ -320,6 +454,9 @@
 
     },
     "Save" : {
+
+    },
+    "School" : {
 
     },
     "See All" : {
@@ -346,6 +483,9 @@
     "Spent" : {
 
     },
+    "Spent on this trip" : {
+
+    },
     "Spent this month" : {
 
     },
@@ -353,6 +493,15 @@
 
     },
     "Sport" : {
+
+    },
+    "Start date" : {
+
+    },
+    "Start Trip" : {
+
+    },
+    "Starts" : {
 
     },
     "Symbol" : {
@@ -368,6 +517,9 @@
 
     },
     "Tells you how much you spent this month." : {
+
+    },
+    "The budget is used up. Mer is hiding the treats." : {
 
     },
     "Times" : {
@@ -388,6 +540,27 @@
     "Trend" : {
 
     },
+    "Trip" : {
+
+    },
+    "Trip entries stay out of the budget, but still count in account balances." : {
+
+    },
+    "Trip entries stay out of the budget." : {
+
+    },
+    "Trip mode" : {
+
+    },
+    "Trip mode turns on at the start date and off after the end date. Entries on any date can join the trip." : {
+
+    },
+    "Trips" : {
+
+    },
+    "Turn off rent, tuition, or other fixed costs to keep them out of the budget. Trip entries never count in the budget." : {
+
+    },
     "Type" : {
 
     },
@@ -398,6 +571,9 @@
 
     },
     "Unlock your money notes." : {
+
+    },
+    "Until %@" : {
 
     },
     "Writes an expense into Mer without opening the app." : {

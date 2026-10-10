@@ -10,7 +10,7 @@ struct EntrySearch {
 
     func matches(_ entry: Entry) -> Bool {
         let amounts = ([entry.amount] + [entry.originalAmount].compactMap(\.self)).flatMap(Self.amountTexts)
-        return query.matches([entry.note, entry.category.displayName]) { term in
+        return query.matches([entry.note, entry.category.displayName, entry.trip?.name ?? ""]) { term in
             guard let number = Self.numberText(term) else { return false }
             return amounts.contains { $0.hasPrefix(number) }
         }

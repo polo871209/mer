@@ -6,4 +6,6 @@ nonisolated enum DefaultsKey {
     static let lockEnabled = "lockEnabled"
     static let addButtonOnLeft = "addButtonOnLeft"
     static let widgetCategories = "widgetCategories"
+    static let budgetEnabled = "budgetEnabled"
+    static let monthlyBudget = "monthlyBudget"
 }

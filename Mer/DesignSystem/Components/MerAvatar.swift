@@ -2,9 +2,10 @@ import SwiftUI
 
 struct MerAvatar: View {
     var size: CGFloat = 72
+    @Environment(\.currentTripID) private var currentTripID
 
     var body: some View {
-        Image(.merFace)
+        Image(currentTripID == nil ? .merFace : .merTravelFace)
             .resizable()
             .scaledToFill()
             .frame(width: size, height: size)
