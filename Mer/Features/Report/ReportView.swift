@@ -2,6 +2,19 @@ import Charts
 import SwiftData
 import SwiftUI
 
+struct ReportTab: View {
+    @Environment(\.currentTripID) private var currentTripID
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        if let trip = currentTripID.flatMap({ context.model(for: $0) as? Trip }) {
+            TripReportView(trip: trip)
+        } else {
+            ReportView()
+        }
+    }
+}
+
 struct ReportView: View {
     @State private var period = Period.month
     @State private var date = Date.now
@@ -55,7 +68,10 @@ private struct ReportContent: View {
         self.account = account
         self.period = period
         self.interval = interval
-        _entries = Query(filter: #Predicate<Entry> { $0.accountCode == account && $0.date >= start && $0.date < end }, sort: \Entry.date)
+        _entries = Query(
+            filter: #Predicate<Entry> { $0.accountCode == account && $0.date >= start && $0.date < end && $0.trip == nil },
+            sort: \Entry.date
+        )
     }
 
     var body: some View {
@@ -70,7 +86,7 @@ private struct ReportContent: View {
                         Group {
                             switch item {
                             case .categories:
-                                CategoryPage(summary: summary, interval: interval)
+                                CategoryPage(summary: summary, source: .account(account), interval: interval)
                             case .trend:
                                 TrendPage(account: account, period: period, interval: interval, spent: summary.expense)
                             }
@@ -94,6 +110,25 @@ private struct ReportContent: View {
             .scrollIndicators(.hidden)
             .animation(.snappy, value: page)
         }
+    }
+}
+
+private struct TripReportView: View {
+    let trip: Trip
+    @Environment(\.currencyCode) private var code
+
+    var body: some View {
+        let summary = PeriodSummary(entries: trip.entries ?? [], convertingTo: code)
+        ScrollView {
+            VStack(spacing: 14) {
+                TripTitle(trip: trip)
+                CategoryPage(summary: summary, source: .trip(trip.uuid), interval: DateInterval(start: .distantPast, end: .distantFuture))
+            }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+        }
+        .paperBackground()
     }
 }
 
@@ -155,6 +190,7 @@ private struct PageDots: View {
 
 private struct CategoryPage: View {
     let summary: PeriodSummary
+    let source: EntrySource
     let interval: DateInterval
     @State private var openSlice: CategorySlice?
     @Environment(\.currencyCode) private var code
@@ -169,7 +205,7 @@ private struct CategoryPage: View {
                 legend
             }
             .sheet(item: $openSlice) { slice in
-                EntriesSheet(title: slice.name, account: code, interval: interval, expensesIn: slice.id)
+                EntriesSheet(title: slice.name, source: source, interval: interval, expensesIn: slice.id)
             }
         }
     }
@@ -185,7 +221,7 @@ private struct CategoryPage: View {
                 Text("Spent")
                     .font(.crayon(13, relativeTo: .caption, bold: false))
                     .foregroundStyle(Palette.pencil)
-                Text(summary.expense.money(code))
+                Text(verbatim: summary.approximatePrefix + summary.expense.money(code))
                     .font(.crayon(20, relativeTo: .title3))
                     .foregroundStyle(Palette.ink)
                     .lineLimit(1)

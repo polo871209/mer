@@ -6,3 +6,6 @@ format:
 
 lint:
     swift format lint --strict --parallel --recursive Mer MerWidget
+
+skills:
+    npx -y skills update swiftui-pro swiftdata-pro -p -y

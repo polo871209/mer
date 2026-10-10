@@ -10,6 +10,6 @@ nonisolated enum CSV {
     private static func escape(_ field: String) -> String {
         let field = field.first.map { "=+-@\t\r".contains($0) } == true ? "'" + field : field
         guard field.contains(where: { $0 == "," || $0 == "\"" || $0.isNewline }) else { return field }
-        return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+        return "\"" + field.replacing("\"", with: "\"\"") + "\""
     }
 }

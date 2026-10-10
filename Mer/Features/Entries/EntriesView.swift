@@ -67,14 +67,8 @@ private struct MonthEntries: View {
                 .accessibilityValue(Text(day, format: .dateTime.weekday(.wide).month(.wide).day()))
             }
             if entries.isEmpty {
-                Group {
-                    if day == nil {
-                        MerEmptyState(title: "No entries", message: "Tap + to log money in or out for this month.")
-                    } else {
-                        MerEmptyState(title: "No entries", message: "Nothing logged here.")
-                    }
-                }
-                .padding(.top, 40)
+                MerEmptyState(title: "No entries", message: day == nil ? "Tap + to log money in or out for this month." : "Nothing logged here.")
+                    .padding(.top, 40)
             }
         }
         .sheet(isPresented: $isPickingDay) {
@@ -107,7 +101,9 @@ private struct SearchResults: View {
 
     init(account: String, search: EntrySearch) {
         self.search = search
-        _entries = Query(filter: #Predicate<Entry> { $0.accountCode == account }, sort: \Entry.date, order: .reverse)
+        var descriptor = FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == account }, sortBy: [SortDescriptor(\.date, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.category, \.trip]
+        _entries = Query(descriptor)
     }
 
     var body: some View {

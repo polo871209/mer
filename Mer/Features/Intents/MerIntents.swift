@@ -1,9 +1,7 @@
 import AppIntents
-import Foundation
 import SwiftData
 
 // The entity and query are nonisolated because App Intents calls them off the main actor.
-// Their methods hop to the main actor to use `Store.shared.mainContext`.
 
 nonisolated struct CategoryEntity: AppEntity {
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Category"
@@ -74,6 +72,7 @@ struct LogExpenseIntent: AppIntent {
         let entry = Entry(amount: value, accountCode: code, kind: .expense, note: note.trimmingCharacters(in: .whitespacesAndNewlines))
         context.insert(entry)
         entry.category = match
+        entry.trip = try context.fetch(FetchDescriptor<Trip>()).current()
         try context.save()
         return .result(dialog: "Logged \(value.money(code)). Mer wrote it down.")
     }
@@ -92,7 +91,8 @@ struct MonthSpendingIntent: AppIntent {
         let expense = EntryKind.expense.rawValue
         let main = Money.mainCode
         let entries = try Store.shared.mainContext.fetch(
-            FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == main && $0.date >= start && $0.date < end && $0.kindRaw == expense })
+            FetchDescriptor<Entry>(
+                predicate: #Predicate { $0.accountCode == main && $0.date >= start && $0.date < end && $0.kindRaw == expense && $0.trip == nil })
         )
         let spent = entries.reduce(Decimal.zero) { $0 + $1.amount }.money(main)
         return .result(dialog: "You spent \(spent) this month.")

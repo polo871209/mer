@@ -20,7 +20,9 @@ struct TrendPage: View {
         self.interval = interval
         self.spent = spent
         self.range = range
-        _entries = Query(filter: #Predicate<Entry> { $0.accountCode == account && $0.date < end })
+        var descriptor = FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == account && $0.date < end && $0.trip == nil })
+        descriptor.propertiesToFetch = [\.date, \.amount, \.kindRaw]
+        _entries = Query(descriptor)
     }
 
     var body: some View {

@@ -4,9 +4,15 @@ import SwiftUI
 struct AccountsView: View {
     @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
     @AppStorage(DefaultsKey.otherCurrencies) private var otherCurrencies = ""
-    @Query private var entries: [Entry]
+    @Query(Self.balanceFields) private var entries: [Entry]
     @State private var isAddingAccount = false
     @State private var isPickingMainAccount = false
+
+    private static var balanceFields: FetchDescriptor<Entry> {
+        var descriptor = FetchDescriptor<Entry>()
+        descriptor.propertiesToFetch = [\.accountCode, \.amount, \.kindRaw]
+        return descriptor
+    }
 
     var body: some View {
         let accounts = Accounts(main: mainCurrency, storedOthers: otherCurrencies)

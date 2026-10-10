@@ -1,6 +1,5 @@
 import LocalAuthentication
 import SwiftUI
-import UIKit
 
 struct AppLockModifier: ViewModifier {
     @AppStorage(DefaultsKey.lockEnabled) private var lockEnabled = false

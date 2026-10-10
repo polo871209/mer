@@ -21,7 +21,7 @@ struct CategoriesView: View {
                                 CategoryBadge(symbol: category.symbol, crayon: category.crayon, size: 34)
                                 Text(category.name).foregroundStyle(Palette.ink)
                                 Spacer()
-                                Text(category.entries?.count ?? 0, format: .number)
+                                Text(entryCount(of: category), format: .number)
                                     .foregroundStyle(Palette.pencil)
                             }
                         }
@@ -34,6 +34,7 @@ struct CategoriesView: View {
                         var reordered = items
                         reordered.move(fromOffsets: source, toOffset: destination)
                         for (index, category) in reordered.enumerated() { category.sortOrder = index }
+                        try? context.save()
                     }
                     Button("Add Category", systemImage: "plus") { addingKind = kind }
                 } header: {
@@ -52,7 +53,7 @@ struct CategoriesView: View {
         }
         .sheet(item: $addingKind) { CategoryEditor(category: nil, kind: $0, nextSortOrder: nextSortOrder) }
         .sheet(item: $editing) { CategoryEditor(category: $0, kind: $0.kind, nextSortOrder: nextSortOrder) }
-        .confirmationDialog(pendingDeletion?.question ?? "", isPresented: isConfirmingDelete, presenting: pendingDeletion) { deletion in
+        .confirmationDialog(pendingDeletion?.question ?? "", item: $pendingDeletion) { deletion in
             Button(deletion.confirmTitle, role: .destructive) {
                 deletion.action()
                 Haptics.deleted()
@@ -65,15 +66,15 @@ struct CategoriesView: View {
     private static let deletionNote: LocalizedStringKey = "Deleting a category keeps its entries. They show as Uncategorized."
 
     static func deletion(of category: EntryCategory, in context: ModelContext) -> EditorDeletion {
-        EditorDeletion(question: "Delete this category?", confirmTitle: "Delete Category", message: deletionNote) { context.delete(category) }
+        EditorDeletion(question: "Delete this category?", confirmTitle: "Delete Category", message: deletionNote) {
+            context.delete(category)
+            try? context.save()
+        }
     }
 
-    private var isConfirmingDelete: Binding<Bool> {
-        Binding {
-            pendingDeletion != nil
-        } set: {
-            if !$0 { pendingDeletion = nil }
-        }
+    private func entryCount(of category: EntryCategory) -> Int {
+        let id = category.uuid
+        return (try? context.fetchCount(FetchDescriptor<Entry>(predicate: #Predicate { $0.category?.uuid == id }))) ?? 0
     }
 
     private var nextSortOrder: Int { (categories.map(\.sortOrder).max() ?? -1) + 1 }
@@ -136,9 +137,10 @@ private struct CategoryEditor: View {
                                         SketchyEllipse(seed: 50)
                                             .stroke(Palette.ink, lineWidth: option == crayon ? 3 : 1)
                                     }
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                                    .contentShape(.rect)
                             }
                             .buttonStyle(.plain)
-                            .frame(maxWidth: .infinity)
                             .accessibilityLabel(Text(option.title))
                             .accessibilityAddTraits(option == crayon ? .isSelected : [])
                         }
@@ -156,6 +158,8 @@ private struct CategoryEditor: View {
                                     .background {
                                         if option == symbol { SketchyEllipse(seed: 60).stroke(Palette.ink, lineWidth: 2) }
                                     }
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                                    .contentShape(.rect)
                             }
                             .buttonStyle(.plain)
                             .accessibilityAddTraits(option == symbol ? .isSelected : [])
@@ -188,6 +192,7 @@ private struct CategoryEditor: View {
         } else {
             context.insert(EntryCategory(name: trimmedName, symbol: symbol, crayon: crayon, kind: kind, sortOrder: nextSortOrder))
         }
+        try? context.save()
     }
 }
 

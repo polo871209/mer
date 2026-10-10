@@ -32,7 +32,7 @@ struct RootView: View {
                 DashboardView().toolbarVisibility(.hidden, for: .tabBar)
             }
             Tab(value: AppTab.report) {
-                ReportView().toolbarVisibility(.hidden, for: .tabBar)
+                ReportTab().toolbarVisibility(.hidden, for: .tabBar)
             }
             Tab(value: AppTab.settings) {
                 SettingsView().toolbarVisibility(.hidden, for: .tabBar)
@@ -42,7 +42,7 @@ struct RootView: View {
             MerTabBar(selection: $tab) { newEntry = NewEntryRequest(categoryID: nil) }
         }
         .sheet(item: $newEntry) { request in
-            EntryEditor(entry: nil, presetCategoryID: request.categoryID).id(request.id)
+            EntryEditor(.new(categoryID: request.categoryID)).id(request.id)
         }
         .onOpenURL { url in
             guard case .newEntry(let categoryID) = DeepLink(url) else { return }
@@ -54,6 +54,7 @@ struct RootView: View {
         .environment(\.currencyCode, mainCurrency)
         .task { await ExchangeRates.shared.refreshIfStale() }
         .modifier(CloudSync())
+        .modifier(CurrentTripSync())
         .modifier(WidgetCategorySync())
         .modifier(AppLockModifier())
     }
@@ -68,6 +69,7 @@ private struct MerTabBar: View {
     @Binding var selection: AppTab
     let add: () -> Void
     @AppStorage(DefaultsKey.addButtonOnLeft) private var addButtonOnLeft = false
+    @Environment(\.currentTripID) private var currentTripID
     @Namespace private var highlight
 
     var body: some View {
@@ -110,6 +112,7 @@ private struct MerTabBar: View {
                     .contentShape(.capsule)
                 }
                 .buttonStyle(.plain)
+                .accessibilityShowsLargeContentViewer()
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
@@ -118,15 +121,18 @@ private struct MerTabBar: View {
     }
 
     private var addButton: some View {
-        Button(action: add) {
-            Image(systemName: "plus")
-                .font(.system(size: 24, weight: .semibold))
+        let isOnTrip = currentTripID != nil
+        return Button(action: add) {
+            Image(systemName: isOnTrip ? "suitcase.rolling.fill" : "plus")
+                .font(.system(size: isOnTrip ? 18 : 24, weight: .semibold))
                 .foregroundStyle(Palette.ink)
+                .contentTransition(.symbolEffect(.replace))
                 .frame(width: 62, height: 62)
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.tint(Palette.highlight).interactive(), in: .circle)
-        .accessibilityLabel("Add Entry")
+        .glassEffect(.regular.tint(isOnTrip ? Crayon.sky.color : Palette.highlight).interactive(), in: .circle)
+        .animation(.snappy, value: isOnTrip)
+        .accessibilityLabel(isOnTrip ? "Add Trip Entry" : "Add Entry")
     }
 }

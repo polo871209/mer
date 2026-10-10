@@ -5,18 +5,26 @@ import SwiftUI
 struct DashboardView: View {
     @State private var month = Period.month.interval(containing: .now).start
     @Environment(\.currencyCode) private var account
+    @Environment(\.currentTripID) private var currentTripID
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 18) {
-                    PeriodPicker(period: .month, date: $month)
-                    DashboardContent(month: month, account: account)
+            Group {
+                if let trip = currentTripID.flatMap({ context.model(for: $0) as? Trip }) {
+                    TripDashboard(trip: trip)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 18) {
+                            PeriodPicker(period: .month, date: $month)
+                            DashboardContent(month: month, account: account)
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 24)
+                    }
+                    .paperBackground()
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 24)
             }
-            .paperBackground()
             .toolbarVisibility(.hidden, for: .navigationBar)
         }
         .followsCurrentPeriod($month, period: .month)
@@ -25,11 +33,15 @@ struct DashboardView: View {
 
 private struct DashboardContent: View {
     @Query private var entries: [Entry]
+    @AppStorage(DefaultsKey.budgetEnabled) private var budgetEnabled = false
+    @AppStorage(DefaultsKey.monthlyBudget) private var monthlyBudget = 0.0
     private let month: Date
+    private let account: String
     private let interval: DateInterval
 
     init(month: Date, account: String) {
         self.month = month
+        self.account = account
         let interval = Period.month.interval(containing: month)
         let start = interval.start
         let end = interval.end
@@ -42,19 +54,26 @@ private struct DashboardContent: View {
     }
 
     var body: some View {
-        let summary = PeriodSummary(entries: entries)
+        let homeEntries = entries.filter { $0.trip == nil }
+        let budgetSummary = PeriodSummary(entries: homeEntries.filter(\.countsInBudget))
+        let budget = MonthlyBudget.limit(isOn: budgetEnabled, stored: monthlyBudget).map {
+            BudgetProgress(limit: $0, spent: budgetSummary.expense)
+        }
+        let summary = budget == nil ? PeriodSummary(entries: homeEntries) : budgetSummary
         VStack(spacing: 18) {
-            MerSays(mood: MerMood(summary: summary))
-            SpentCard(spent: summary.expense)
-            if !summary.days.isEmpty {
-                DailyCard(days: summary.days, interval: interval)
+            MerSays(mood: homeEntries.isEmpty ? .waiting : budget.map(MerMood.init(budget:)) ?? MerMood(summary: summary))
+            SpentCard(title: "Spent this month", spent: summary.expense, color: budget?.level.textColor ?? Palette.ink) {
+                if let budget { BudgetDetail(budget: budget) }
             }
-            RecentCard(entries: Array(entries.prefix(5)), month: month)
+            if !summary.days.isEmpty {
+                DailyCard(days: summary.days, interval: interval, source: .account(account))
+            }
+            RecentCard(entries: Array(entries.prefix(5))) { EntriesView(month: month) }
         }
     }
 }
 
-private struct MerSays: View {
+struct MerSays: View {
     let mood: MerMood
 
     var body: some View {
@@ -69,21 +88,26 @@ private struct MerSays: View {
     }
 }
 
-private struct SpentCard: View {
+struct SpentCard<Detail: View>: View {
+    let title: LocalizedStringKey
     let spent: Decimal
+    var prefix = ""
+    var color = Palette.ink
+    @ViewBuilder var detail: Detail
     @Environment(\.currencyCode) private var code
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Spent this month")
+            Text(title)
                 .font(.crayon(15, relativeTo: .subheadline, bold: false))
                 .foregroundStyle(Palette.pencil)
-            Text(spent.money(code))
+            Text(verbatim: prefix + spent.money(code))
                 .font(.crayon(38, relativeTo: .largeTitle))
-                .foregroundStyle(Palette.ink)
+                .foregroundStyle(color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .contentTransition(.numericText())
+            detail
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -92,10 +116,78 @@ private struct SpentCard: View {
     }
 }
 
-private struct DailyCard: View {
+extension SpentCard where Detail == EmptyView {
+    init(title: LocalizedStringKey, spent: Decimal, prefix: String = "") {
+        self.init(title: title, spent: spent, prefix: prefix) { EmptyView() }
+    }
+}
+
+private struct BudgetDetail: View {
+    let budget: BudgetProgress
+    @Environment(\.currencyCode) private var code
+
+    var body: some View {
+        BudgetBar(budget: budget)
+        Group {
+            if budget.isOver {
+                Text("Budget \(budget.limit.money(code))")
+            } else {
+                Text("\(budget.left.money(code)) left of \(budget.limit.money(code))")
+            }
+        }
+        .font(.crayon(14, relativeTo: .subheadline, bold: false))
+        .foregroundStyle(Palette.pencil)
+    }
+}
+
+private struct BudgetBar: View {
+    let budget: BudgetProgress
+
+    var body: some View {
+        let outline = SketchyRect(cornerRadius: 7, wobble: 1, seed: 41)
+        CrayonFill(color: budget.level.barColor, shape: outline, seed: 41)
+            .mask(alignment: .leading) {
+                Rectangle().scaleEffect(x: min(budget.share, 1), anchor: .leading)
+            }
+            .overlay { outline.stroke(Palette.ink, style: StrokeStyle(lineWidth: 1.5, lineCap: .round)) }
+            .overlay(alignment: .leading) {
+                if let limitShare = budget.limitShare {
+                    Capsule()
+                        .fill(Palette.ink)
+                        .frame(width: 3, height: 24)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .visualEffect { content, proxy in
+                            content.offset(x: proxy.size.width * limitShare - 1.5)
+                        }
+                }
+            }
+            .frame(height: 16)
+            .accessibilityHidden(true)
+    }
+}
+
+extension BudgetLevel {
+    fileprivate var barColor: Color {
+        switch self {
+        case .under: Crayon.sage.color
+        case .near: Crayon.butter.color
+        case .reached: Palette.expense
+        }
+    }
+
+    fileprivate var textColor: Color {
+        switch self {
+        case .under: Palette.ink
+        case .near: Palette.warning
+        case .reached: Palette.expense
+        }
+    }
+}
+
+struct DailyCard: View {
     let days: [DayTotal]
     let interval: DateInterval
-    @Environment(\.currencyCode) private var account
+    let source: EntrySource
     @State private var tappedDate: Date?
     @State private var openDay: DayTotal?
 
@@ -137,16 +229,16 @@ private struct DailyCard: View {
         .sheet(item: $openDay) { day in
             EntriesSheet(
                 title: day.day.formatted(.dateTime.weekday(.wide).day().month()),
-                account: account,
+                source: source,
                 interval: DateInterval(start: day.day, end: Calendar.current.date(byAdding: .day, value: 1, to: day.day) ?? day.day)
             )
         }
     }
 }
 
-private struct RecentCard: View {
+struct RecentCard<SeeAll: View>: View {
     let entries: [Entry]
-    let month: Date
+    @ViewBuilder let seeAll: SeeAll
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -154,7 +246,7 @@ private struct RecentCard: View {
                 Text("Recent").cardTitle()
                 Spacer()
                 if !entries.isEmpty {
-                    NavigationLink("See All") { EntriesView(month: month) }
+                    NavigationLink("See All") { seeAll }
                         .font(.crayon(15, relativeTo: .subheadline))
                 }
             }

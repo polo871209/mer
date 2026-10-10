@@ -7,6 +7,8 @@ struct SettingsView: View {
     @AppStorage(DefaultsKey.mainCurrency) private var mainCurrency = Money.defaultCode
     @AppStorage(DefaultsKey.lockEnabled) private var lockEnabled = false
     @AppStorage(DefaultsKey.addButtonOnLeft) private var addButtonOnLeft = false
+    @AppStorage(DefaultsKey.budgetEnabled) private var budgetEnabled = false
+    @AppStorage(DefaultsKey.monthlyBudget) private var monthlyBudget = 0.0
     @Query(Self.firstEntry) private var entries: [Entry]
     @State private var canAuthenticate = false
 
@@ -36,7 +38,13 @@ struct SettingsView: View {
                     } label: {
                         LabeledContent("Accounts", value: Money.name(mainCurrency))
                     }
+                    NavigationLink {
+                        BudgetView()
+                    } label: {
+                        LabeledContent("Budget", value: budgetSummary)
+                    }
                     NavigationLink("Categories") { CategoriesView() }
+                    NavigationLink("Trips") { TripsView() }
                 }
 
                 Section {
@@ -71,6 +79,10 @@ struct SettingsView: View {
         }
         .task { canAuthenticate = LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) }
     }
+
+    private var budgetSummary: String {
+        MonthlyBudget.limit(isOn: budgetEnabled, stored: monthlyBudget)?.money(mainCurrency) ?? String(localized: "Off")
+    }
 }
 
 nonisolated struct EntriesCSV: Transferable {
@@ -84,8 +96,10 @@ nonisolated struct EntriesCSV: Transferable {
 
     @MainActor
     private static func text() throws -> String {
-        let entries = try Store.shared.mainContext.fetch(FetchDescriptor<Entry>(sortBy: [SortDescriptor(\.date, order: .reverse)]))
-        let header = ["Date", "Type", "Category", "Amount", "Account", "Original Amount", "Original Currency", "Note"]
+        var descriptor = FetchDescriptor<Entry>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.category, \.trip]
+        let entries = try Store.shared.mainContext.fetch(descriptor)
+        let header = ["Date", "Type", "Category", "Amount", "Account", "Original Amount", "Original Currency", "Trip", "Note"]
         let rows = entries.map { entry in
             [
                 entry.date.formatted(.iso8601),
@@ -95,6 +109,7 @@ nonisolated struct EntriesCSV: Transferable {
                 entry.accountCode,
                 entry.originalAmount?.description ?? "",
                 entry.originalCode ?? "",
+                entry.trip?.name ?? "",
                 entry.note,
             ]
         }

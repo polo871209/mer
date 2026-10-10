@@ -16,14 +16,19 @@ nonisolated enum EntryKind: String, CaseIterable, Identifiable {
 
 @Model
 final class Entry {
+    #Index<Entry>([\.accountCode, \.date], [\.date])
+
     var amount: Decimal = 0
     var accountCode: String = ""
     var originalAmount: Decimal?
     var originalCode: String?
+    var mainAmount: Decimal?
+    var mainCode: String?
     var kindRaw: String = EntryKind.expense.rawValue
     var note: String = ""
     var date: Date = Date.now
     var category: EntryCategory?
+    var trip: Trip?
 
     init(amount: Decimal, accountCode: String, kind: EntryKind, date: Date = .now, note: String = "") {
         self.amount = amount
@@ -39,6 +44,8 @@ final class Entry {
     }
 
     var signedAmount: Decimal { kind == .income ? amount : -amount }
+
+    var countsInBudget: Bool { trip == nil && category?.isInBudget ?? true }
 
     var typedAmount: Decimal { originalAmount ?? amount }
     var typedCode: String { originalCode ?? accountCode }
@@ -58,6 +65,7 @@ final class EntryCategory {
     var kindRaw: String = EntryKind.expense.rawValue
     var sortOrder: Int = 0
     var seedKey: String?
+    var isInBudget: Bool = true
     @Relationship(deleteRule: .nullify, inverse: \Entry.category)
     var entries: [Entry]? = []
 

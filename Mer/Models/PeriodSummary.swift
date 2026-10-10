@@ -20,25 +20,32 @@ struct PeriodSummary {
     let slices: [CategorySlice]
     let days: [DayTotal]
     let isEmpty: Bool
+    let isApproximate: Bool
 
     var balance: Decimal { income - expense }
+    var approximatePrefix: String { isApproximate ? "≈ " : "" }
 
-    init(entries: [Entry], calendar: Calendar = .current) {
+    init(entries: [Entry], convertingTo mainCode: String? = nil, calendar: Calendar = .current) {
         var income = Decimal.zero
         var expense = Decimal.zero
+        var isApproximate = false
         var byCategory: [UUID?: (category: EntryCategory?, total: Decimal)] = [:]
         var byDay: [Date: Decimal] = [:]
         for entry in entries {
+            let converted = mainCode.map { entry.amount(in: $0) } ?? (value: entry.amount, isApproximate: false)
+            let amount = converted.value
+            if converted.isApproximate { isApproximate = true }
             switch entry.kind {
             case .income:
-                income += entry.amount
+                income += amount
             case .expense:
-                expense += entry.amount
+                expense += amount
                 let category = entry.category
-                byCategory[category?.uuid, default: (category, 0)].total += entry.amount
-                byDay[calendar.startOfDay(for: entry.date), default: 0] += entry.amount
+                byCategory[category?.uuid, default: (category, 0)].total += amount
+                byDay[calendar.startOfDay(for: entry.date), default: 0] += amount
             }
         }
+        self.isApproximate = isApproximate
         self.income = income
         self.expense = expense
         self.slices =
@@ -59,7 +66,7 @@ struct PeriodSummary {
 }
 
 nonisolated enum MerMood {
-    case waiting, happy, treats
+    case waiting, happy, treats, travelling, nearBudget, budgetReached
 
     init(summary: PeriodSummary) {
         if summary.isEmpty {
@@ -69,11 +76,22 @@ nonisolated enum MerMood {
         }
     }
 
+    init(budget: BudgetProgress) {
+        switch budget.level {
+        case .under: self = .happy
+        case .near: self = .nearBudget
+        case .reached: self = .budgetReached
+        }
+    }
+
     var line: LocalizedStringResource {
         switch self {
         case .waiting: "Nothing logged yet. Mer is waiting in the bowl."
         case .happy: "Looking good. Mer approves."
         case .treats: "More out than in. Mer says treats cost money too."
+        case .travelling: "Mer is on a trip. Spending here stays out of the budget."
+        case .nearBudget: "Almost at the budget. Mer is watching."
+        case .budgetReached: "The budget is used up. Mer is hiding the treats."
         }
     }
 }

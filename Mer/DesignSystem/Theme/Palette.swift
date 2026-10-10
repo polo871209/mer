@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 enum Palette {
     static let paper = Color(.paper)
@@ -9,6 +8,7 @@ enum Palette {
     static let pencil = Color(.pencil)
     static let income = Color(.income)
     static let expense = Color(.expense)
+    static let warning = Color(.warning)
     static let balance = Color(.balance)
 }
 
