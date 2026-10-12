@@ -61,6 +61,7 @@ enum Store {
             key: "school", name: String(localized: "School"), symbol: "graduationcap", crayon: .sage, kind: .expense, isInBudget: false, hiddenIn: .trip),
         CategorySeed(key: "fun", name: String(localized: "Fun"), symbol: "gamecontroller", crayon: .sky, kind: .expense),
         CategorySeed(key: "health", name: String(localized: "Health"), symbol: "cross.case", crayon: .sage, kind: .expense, hiddenIn: .trip),
+        CategorySeed(key: "beauty", name: String(localized: "Beauty"), symbol: "comb", crayon: .blush, kind: .expense, hiddenIn: .trip),
         CategorySeed(key: "sport", name: String(localized: "Sport"), symbol: "dumbbell", crayon: .tangerine, kind: .expense, hiddenIn: .trip),
         CategorySeed(key: "travel", name: String(localized: "Travel"), symbol: "suitcase", crayon: .lilac, kind: .expense, hiddenIn: .trip),
         CategorySeed(key: "gift", name: String(localized: "Gift"), symbol: "gift", crayon: .blush, kind: .expense),
