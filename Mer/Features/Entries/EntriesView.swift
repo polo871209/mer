@@ -4,7 +4,6 @@ import SwiftUI
 struct EntriesView: View {
     @State private var month: Date
     @State private var day: Date?
-    @State private var searchText = ""
     @Environment(\.currencyCode) private var account
 
     init(month: Date) {
@@ -12,17 +11,11 @@ struct EntriesView: View {
     }
 
     var body: some View {
-        Group {
-            if let search = EntrySearch(searchText) {
-                SearchResults(account: account, search: search)
-            } else {
-                MonthEntries(account: account, month: $month, day: $day)
-            }
-        }
-        .paperBackground()
-        .navigationTitle("Entries")
-        .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Amount, category, or note")
+        MonthEntries(account: account, month: $month, day: $day)
+            .searchesEntries()
+            .paperBackground()
+            .navigationTitle("Entries")
+            .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -91,28 +84,6 @@ private struct MonthEntries: View {
         } set: {
             month = $0
             day = nil
-        }
-    }
-}
-
-private struct SearchResults: View {
-    let search: EntrySearch
-    @Query private var entries: [Entry]
-
-    init(account: String, search: EntrySearch) {
-        self.search = search
-        var descriptor = FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == account }, sortBy: [SortDescriptor(\.date, order: .reverse)])
-        descriptor.relationshipKeyPathsForPrefetching = [\.category, \.trip]
-        _entries = Query(descriptor)
-    }
-
-    var body: some View {
-        let matches = entries.filter(search.matches)
-        EntryDayList(entries: matches) {
-            if matches.isEmpty {
-                MerEmptyState(title: "No matches", message: "Mer looked everywhere, even in the bowl.")
-                    .padding(.top, 40)
-            }
         }
     }
 }

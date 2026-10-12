@@ -1,6 +1,6 @@
 # Mer
 
-Mer is a personal iOS app for tracking expenses and income, themed around a cat named Mer. It uses SwiftUI, SwiftData, Swift 6, and targets iOS 27. The app is not released, so breaking changes are allowed.
+Mer is a personal iOS app for tracking expenses and income, themed around a cat named Mer. It uses SwiftUI, SwiftData, Swift 6, and targets iOS 27. The app is released, so a change must keep existing SwiftData and iCloud data readable.
 
 ## Public repository
 

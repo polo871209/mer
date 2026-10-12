@@ -21,13 +21,7 @@ struct MonthCalendar: View {
             PeriodPicker(period: .month, date: $month, allowsFuture: true)
             weekdayHeader
             DayGrid(account: account, month: month, selection: selection, pick: choose)
-                .contentShape(.rect)
-                .gesture(
-                    DragGesture(minimumDistance: 24).onEnded { value in
-                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                        shiftMonth(by: value.translation.width < 0 ? 1 : -1)
-                    }
-                )
+                .swipesPeriod(.month, date: $month, allowsFuture: true)
             Button("Today") { choose(calendar.startOfDay(for: .now)) }
                 .font(.crayon(17, relativeTo: .body))
                 .buttonStyle(.glass)
@@ -59,11 +53,6 @@ struct MonthCalendar: View {
             }
         }
         .accessibilityHidden(true)
-    }
-
-    private func shiftMonth(by count: Int) {
-        guard let target = calendar.date(byAdding: .month, value: count, to: month) else { return }
-        withAnimation(.snappy) { month = target }
     }
 
     private func choose(_ day: Date) {
