@@ -231,6 +231,9 @@
     "Export CSV" : {
 
     },
+    "Export Receipts" : {
+
+    },
     "Flight" : {
 
     },
@@ -558,6 +561,9 @@
 
     },
     "Share Receipt" : {
+
+    },
+    "Shares every receipt on this trip as one zip file." : {
 
     },
     "Shopping" : {

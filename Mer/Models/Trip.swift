@@ -40,6 +40,8 @@ final class Trip {
         }
     }
 
+    var hasReceipts: Bool { entries?.contains { $0.receipt != nil } ?? false }
+
     var statusText: String {
         let status = String(localized: status().title)
         return datesText.map { "\(status) · \($0)" } ?? status
