@@ -1,3 +1,4 @@
+/// A description
 nonisolated enum DefaultsKey {
     static let mainCurrency = "currencyCode"
     static let otherCurrencies = "otherCurrencies"
@@ -8,4 +9,5 @@ nonisolated enum DefaultsKey {
     static let widgetCategories = "widgetCategories"
     static let budgetEnabled = "budgetEnabled"
     static let monthlyBudget = "monthlyBudget"
+    static let tripCategoriesAdded = "tripCategoriesAdded"
 }

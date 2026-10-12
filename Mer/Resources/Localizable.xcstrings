@@ -87,6 +87,9 @@
     "Balances" : {
 
     },
+    "Beauty" : {
+
+    },
     "Bills" : {
 
     },
@@ -213,10 +216,16 @@
     "Entries" : {
 
     },
+    "Everyday" : {
+
+    },
     "Expense" : {
 
     },
     "Export CSV" : {
+
+    },
+    "Flight" : {
 
     },
     "Food" : {
@@ -243,6 +252,12 @@
     "Health" : {
 
     },
+    "Hidden" : {
+
+    },
+    "Hide" : {
+
+    },
     "Home" : {
 
     },
@@ -253,6 +268,9 @@
 
     },
     "Home shows how much of the budget is left this month." : {
+
+    },
+    "Hotel" : {
 
     },
     "How much?" : {
@@ -378,6 +396,9 @@
 
     },
     "Minus" : {
+
+    },
+    "Mode" : {
 
     },
     "Money" : {
@@ -521,6 +542,18 @@
     "Shopping" : {
 
     },
+    "Show" : {
+
+    },
+    "Show Hidden" : {
+
+    },
+    "Show in Picker" : {
+
+    },
+    "Show Less" : {
+
+    },
     "Show Whole Month" : {
 
     },
@@ -570,6 +603,12 @@
     "Starts" : {
 
     },
+    "Swipe right to hide a category from entries without a trip. Hidden categories stay under Show Hidden in the category picker." : {
+
+    },
+    "Swipe right to hide a category from trip entries. Hidden categories stay under Show Hidden in the category picker." : {
+
+    },
     "Symbol" : {
 
     },
@@ -598,6 +637,9 @@
 
     },
     "Tomorrow" : {
+
+    },
+    "Tours" : {
 
     },
     "Transport" : {

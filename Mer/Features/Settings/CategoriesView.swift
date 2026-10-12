@@ -7,23 +7,48 @@ struct CategoriesView: View {
     @State private var editing: EntryCategory?
     @State private var addingKind: EntryKind?
     @State private var pendingDeletion: EditorDeletion?
+    @State private var mode = CategoryMode.everyday
 
     var body: some View {
         List {
+            Section {
+                Picker("Mode", selection: $mode) {
+                    ForEach(CategoryMode.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+            } footer: {
+                Text(mode == .everyday ? Self.everydayNote : Self.tripNote)
+            }
             ForEach(EntryKind.allCases) { kind in
                 let items = categories.filter { $0.kind == kind }
                 Section {
                     ForEach(items) { category in
+                        let isHidden = category.isHidden(in: mode)
                         Button {
                             editing = category
                         } label: {
                             HStack(spacing: 12) {
                                 CategoryBadge(symbol: category.symbol, crayon: category.crayon, size: 34)
-                                Text(category.name).foregroundStyle(Palette.ink)
+                                    .opacity(isHidden ? 0.4 : 1)
+                                Text(category.name).foregroundStyle(isHidden ? Palette.pencil : Palette.ink)
                                 Spacer()
+                                if isHidden {
+                                    Image(systemName: "eye.slash")
+                                        .foregroundStyle(Palette.pencil)
+                                        .accessibilityLabel("Hidden")
+                                }
                                 Text(entryCount(of: category), format: .number)
                                     .foregroundStyle(Palette.pencil)
                             }
+                        }
+                        .swipeActions(edge: .leading) {
+                            Button(isHidden ? "Show" : "Hide", systemImage: isHidden ? "eye" : "eye.slash") {
+                                category.setHidden(!isHidden, in: mode)
+                                try? context.save()
+                            }
+                            .tint(Crayon.sky.color)
                         }
                         .swipeActions {
                             Button("Delete", systemImage: "trash") { pendingDeletion = Self.deletion(of: category, in: context) }
@@ -63,6 +88,10 @@ struct CategoriesView: View {
         }
     }
 
+    private static let everydayNote: LocalizedStringKey =
+        "Swipe right to hide a category from entries without a trip. Hidden categories stay under Show Hidden in the category picker."
+    private static let tripNote: LocalizedStringKey =
+        "Swipe right to hide a category from trip entries. Hidden categories stay under Show Hidden in the category picker."
     private static let deletionNote: LocalizedStringKey = "Deleting a category keeps its entries. They show as Uncategorized."
 
     static func deletion(of category: EntryCategory, in context: ModelContext) -> EditorDeletion {
@@ -88,10 +117,12 @@ private struct CategoryEditor: View {
     @State private var symbol: String
     @State private var crayon: Crayon
     @State private var kind: EntryKind
+    @State private var isShownEveryday: Bool
+    @State private var isShownOnTrip: Bool
 
     private static let symbols = [
         "fork.knife", "cup.and.saucer", "cart", "bag", "tram", "car", "fuelpump", "airplane",
-        "house", "bolt", "drop", "wifi", "phone", "tv", "gamecontroller", "film",
+        "bed.double", "ticket", "suitcase", "house", "bolt", "drop", "wifi", "phone", "tv", "gamecontroller", "film",
         "music.note", "book", "graduationcap", "cross.case", "pills", "dumbbell", "pawprint", "gift",
         "heart", "tshirt", "scissors", "wrench.and.screwdriver", "banknote", "briefcase", "creditcard", "chart.line.uptrend.xyaxis", "sparkles",
     ]
@@ -103,6 +134,8 @@ private struct CategoryEditor: View {
         _symbol = State(initialValue: category?.symbol ?? "sparkles")
         _crayon = State(initialValue: category?.crayon ?? .butter)
         _kind = State(initialValue: kind)
+        _isShownEveryday = State(initialValue: !(category?.isHiddenEveryday ?? false))
+        _isShownOnTrip = State(initialValue: !(category?.isHiddenOnTrip ?? false))
     }
 
     var body: some View {
@@ -124,6 +157,10 @@ private struct CategoryEditor: View {
                         }
                         .pickerStyle(.segmented)
                     }
+                }
+                Section("Show in Picker") {
+                    Toggle(isOn: $isShownEveryday) { Text(CategoryMode.everyday.title) }
+                    Toggle(isOn: $isShownOnTrip) { Text(CategoryMode.trip.title) }
                 }
                 Section("Crayon") {
                     HStack {
@@ -185,13 +222,18 @@ private struct CategoryEditor: View {
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     private func save() {
+        let target: EntryCategory
         if let category {
-            category.name = trimmedName
-            category.symbol = symbol
-            category.crayon = crayon
+            target = category
         } else {
-            context.insert(EntryCategory(name: trimmedName, symbol: symbol, crayon: crayon, kind: kind, sortOrder: nextSortOrder))
+            target = EntryCategory(name: trimmedName, symbol: symbol, crayon: crayon, kind: kind, sortOrder: nextSortOrder)
+            context.insert(target)
         }
+        target.name = trimmedName
+        target.symbol = symbol
+        target.crayon = crayon
+        target.isHiddenEveryday = !isShownEveryday
+        target.isHiddenOnTrip = !isShownOnTrip
         try? context.save()
     }
 }
