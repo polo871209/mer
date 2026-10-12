@@ -448,6 +448,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = MerWidget/MerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 75S84TCUL2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Mer;
@@ -473,6 +474,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = MerWidget/MerWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 75S84TCUL2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Mer;
