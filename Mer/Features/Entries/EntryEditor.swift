@@ -68,6 +68,8 @@ struct EntryEditor: View {
     }
 
     private var choices: [EntryCategory] { categories.filter { $0.kind == kind } }
+    private var mode: CategoryMode { CategoryMode(trip: trip) }
+    private var defaultChoice: EntryCategory? { choices.shown(in: mode).first ?? choices.first }
 
     var body: some View {
         let accounts = Accounts(main: mainCurrency, storedOthers: otherCurrencies)
@@ -93,7 +95,7 @@ struct EntryEditor: View {
                 )
 
                 HStack(spacing: 10) {
-                    CategoryField(categories: choices, selection: $category)
+                    CategoryField(categories: choices, mode: mode, selection: $category)
                     DateField(date: $date)
                 }
 
@@ -140,7 +142,7 @@ struct EntryEditor: View {
                 currency = trip?.currencyCode ?? Money.mainCode
             }
             .onChange(of: kind) {
-                if category?.kind != kind { category = choices.first }
+                if category?.kind != kind { category = defaultChoice }
             }
             .onAppear(perform: applyPresets)
             .task(id: currency) {
@@ -161,9 +163,9 @@ struct EntryEditor: View {
             category = preset
             kind = preset.kind
         } else if isClaim {
-            category = categories.first { $0.seedKey == "other-income" } ?? choices.first
+            category = categories.first { $0.seedKey == "other-income" } ?? defaultChoice
         } else {
-            category = choices.first
+            category = defaultChoice
         }
     }
 
@@ -285,6 +287,7 @@ private struct SavedConversion {
 
 private struct CategoryField: View {
     let categories: [EntryCategory]
+    let mode: CategoryMode
     @Binding var selection: EntryCategory?
     @State private var isPicking = false
 
@@ -310,48 +313,73 @@ private struct CategoryField: View {
         .accessibilityLabel("Category")
         .accessibilityValue(selection.displayName)
         .sheet(isPresented: $isPicking) {
-            CategoryPicker(categories: categories, selection: $selection)
+            CategoryPicker(categories: categories, mode: mode, selection: $selection)
         }
     }
 }
 
 private struct CategoryPicker: View {
     let categories: [EntryCategory]
+    let mode: CategoryMode
     @Binding var selection: EntryCategory?
+    @State private var showsHidden: Bool
     @Environment(\.dismiss) private var dismiss
 
+    init(categories: [EntryCategory], mode: CategoryMode, selection: Binding<EntryCategory?>) {
+        self.categories = categories
+        self.mode = mode
+        _selection = selection
+        _showsHidden = State(initialValue: selection.wrappedValue?.isHidden(in: mode) ?? false)
+    }
+
     var body: some View {
+        let hidden = categories.hidden(in: mode)
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 8)], spacing: 12) {
-                ForEach(categories) { category in
-                    let isSelected = selection == category
-                    Button {
-                        selection = category
-                        Haptics.picked()
-                        dismiss()
-                    } label: {
-                        VStack(spacing: 6) {
-                            CategoryBadge(symbol: category.symbol, crayon: category.crayon, size: 48)
-                                .overlay {
-                                    if isSelected {
-                                        SketchyEllipse(seed: 13).stroke(Palette.ink, lineWidth: 3).padding(-5)
-                                    }
-                                }
-                            Text(category.name)
-                                .font(.caption.weight(isSelected ? .bold : .regular))
-                                .lineLimit(1)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                        .contentShape(.rect)
+            VStack(spacing: 16) {
+                grid(categories.shown(in: mode))
+                if !hidden.isEmpty {
+                    Button(showsHidden ? "Show Less" : "Show Hidden", systemImage: showsHidden ? "eye.slash" : "eye") {
+                        withAnimation(.snappy) { showsHidden.toggle() }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                    .buttonStyle(.glass)
+                    if showsHidden {
+                        grid(hidden)
+                    }
                 }
             }
             .padding()
         }
         .pickerSheet(Text("Category"))
+    }
+
+    private func grid(_ categories: [EntryCategory]) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 8)], spacing: 12) {
+            ForEach(categories) { category in
+                let isSelected = selection == category
+                Button {
+                    selection = category
+                    Haptics.picked()
+                    dismiss()
+                } label: {
+                    VStack(spacing: 6) {
+                        CategoryBadge(symbol: category.symbol, crayon: category.crayon, size: 48)
+                            .overlay {
+                                if isSelected {
+                                    SketchyEllipse(seed: 13).stroke(Palette.ink, lineWidth: 3).padding(-5)
+                                }
+                            }
+                        Text(category.name)
+                            .font(.caption.weight(isSelected ? .bold : .regular))
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
     }
 }
 

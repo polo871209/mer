@@ -22,6 +22,8 @@ In the default categories, Home is now Rent, Mer is now Pets, and School is new.
 1. Delete Mer from every device and simulator that has it.
 2. Open the CloudKit Console at https://icloud.developer.apple.com, select `iCloud.com.polo.Mer`, and pick Reset Development Environment.
 3. Install Mer from Xcode. Make sure that Settings > Categories shows Rent, School, and Pets, and that Settings > Budget shows Rent and School turned off.
+4. In Settings > Categories, pick Everyday. Make sure that Flight, Hotel, and Tours show as hidden. Pick Trip. Make sure that Bills, Rent, School, Health, Sport, Travel, and Pets show as hidden.
+5. Add a trip that starts today, then open the New Entry keypad and tap the category. Make sure that the picker shows Flight, Hotel, and Tours, and that Show Hidden reveals Rent and the other hidden categories.
 
 ## 3. Test the Quick Add widget
 

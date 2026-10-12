@@ -15,6 +15,7 @@ enum Store {
         do {
             let container = try ModelContainer(for: schema, configurations: configuration)
             seedCategories(in: container.mainContext)
+            if !inMemory { addTripCategories(in: container.mainContext) }
             return container
         } catch {
             fatalError("Could not open the Mer store: \(error)")
@@ -43,6 +44,7 @@ enum Store {
         let crayon: Crayon
         let kind: EntryKind
         var isInBudget = true
+        var hiddenIn: CategoryMode?
     }
 
     private static let categorySeeds = [
@@ -50,15 +52,19 @@ enum Store {
         CategorySeed(key: "groceries", name: String(localized: "Groceries"), symbol: "cart", crayon: .butter, kind: .expense),
         CategorySeed(key: "transport", name: String(localized: "Transport"), symbol: "tram", crayon: .sky, kind: .expense),
         CategorySeed(key: "shopping", name: String(localized: "Shopping"), symbol: "bag", crayon: .lilac, kind: .expense),
-        CategorySeed(key: "bills", name: String(localized: "Bills"), symbol: "bolt", crayon: .tangerine, kind: .expense),
-        CategorySeed(key: "rent", name: String(localized: "Rent"), symbol: "house", crayon: .fur, kind: .expense, isInBudget: false),
-        CategorySeed(key: "school", name: String(localized: "School"), symbol: "graduationcap", crayon: .sage, kind: .expense, isInBudget: false),
+        CategorySeed(key: "flight", name: String(localized: "Flight"), symbol: "airplane", crayon: .sky, kind: .expense, hiddenIn: .everyday),
+        CategorySeed(key: "hotel", name: String(localized: "Hotel"), symbol: "bed.double", crayon: .lilac, kind: .expense, hiddenIn: .everyday),
+        CategorySeed(key: "tours", name: String(localized: "Tours"), symbol: "ticket", crayon: .tangerine, kind: .expense, hiddenIn: .everyday),
+        CategorySeed(key: "bills", name: String(localized: "Bills"), symbol: "bolt", crayon: .tangerine, kind: .expense, hiddenIn: .trip),
+        CategorySeed(key: "rent", name: String(localized: "Rent"), symbol: "house", crayon: .fur, kind: .expense, isInBudget: false, hiddenIn: .trip),
+        CategorySeed(
+            key: "school", name: String(localized: "School"), symbol: "graduationcap", crayon: .sage, kind: .expense, isInBudget: false, hiddenIn: .trip),
         CategorySeed(key: "fun", name: String(localized: "Fun"), symbol: "gamecontroller", crayon: .sky, kind: .expense),
-        CategorySeed(key: "health", name: String(localized: "Health"), symbol: "cross.case", crayon: .sage, kind: .expense),
-        CategorySeed(key: "sport", name: String(localized: "Sport"), symbol: "dumbbell", crayon: .tangerine, kind: .expense),
-        CategorySeed(key: "travel", name: String(localized: "Travel"), symbol: "airplane", crayon: .lilac, kind: .expense),
+        CategorySeed(key: "health", name: String(localized: "Health"), symbol: "cross.case", crayon: .sage, kind: .expense, hiddenIn: .trip),
+        CategorySeed(key: "sport", name: String(localized: "Sport"), symbol: "dumbbell", crayon: .tangerine, kind: .expense, hiddenIn: .trip),
+        CategorySeed(key: "travel", name: String(localized: "Travel"), symbol: "suitcase", crayon: .lilac, kind: .expense, hiddenIn: .trip),
         CategorySeed(key: "gift", name: String(localized: "Gift"), symbol: "gift", crayon: .blush, kind: .expense),
-        CategorySeed(key: "pets", name: String(localized: "Pets"), symbol: "pawprint", crayon: .fur, kind: .expense),
+        CategorySeed(key: "pets", name: String(localized: "Pets"), symbol: "pawprint", crayon: .fur, kind: .expense, hiddenIn: .trip),
         CategorySeed(key: "other", name: String(localized: "Other"), symbol: "ellipsis", crayon: .cocoa, kind: .expense),
         CategorySeed(key: "salary", name: String(localized: "Salary"), symbol: "banknote", crayon: .sage, kind: .income),
         CategorySeed(key: "side-gig", name: String(localized: "Side Gig"), symbol: "briefcase", crayon: .sky, kind: .income),
@@ -70,11 +76,45 @@ enum Store {
     private static func seedCategories(in context: ModelContext) {
         guard (try? context.fetchCount(FetchDescriptor<EntryCategory>())) == 0 else { return }
         for (index, seed) in categorySeeds.enumerated() {
-            let category = EntryCategory(name: seed.name, symbol: seed.symbol, crayon: seed.crayon, kind: seed.kind, sortOrder: index, seedKey: seed.key)
-            category.isInBudget = seed.isInBudget
-            context.insert(category)
+            insert(seed, sortOrder: index, in: context)
         }
         try? context.save()
+    }
+
+    private static func addTripCategories(in context: ModelContext) {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: DefaultsKey.tripCategoriesAdded),
+            let categories = try? context.fetch(FetchDescriptor<EntryCategory>(sortBy: [SortDescriptor(\.sortOrder)]))
+        else { return }
+        let seeded = Dictionary(categories.compactMap { category in category.seedKey.map { ($0, category) } }) { first, _ in first }
+        let missing = categorySeeds.filter { $0.hiddenIn == .everyday && seeded[$0.key] == nil }
+        let anchor = seeded["shopping"]?.sortOrder ?? categories.last?.sortOrder ?? -1
+        for category in categories where category.sortOrder > anchor {
+            category.sortOrder += missing.count
+        }
+        for (offset, seed) in missing.enumerated() {
+            insert(seed, sortOrder: anchor + 1 + offset, in: context)
+        }
+        for seed in categorySeeds {
+            guard let mode = seed.hiddenIn, let category = seeded[seed.key] else { continue }
+            category.setHidden(true, in: mode)
+        }
+        if let travel = seeded["travel"], travel.symbol == "airplane" {
+            travel.symbol = "suitcase"
+        }
+        do {
+            try context.save()
+            defaults.set(true, forKey: DefaultsKey.tripCategoriesAdded)
+        } catch {
+            context.rollback()
+        }
+    }
+
+    private static func insert(_ seed: CategorySeed, sortOrder: Int, in context: ModelContext) {
+        let category = EntryCategory(name: seed.name, symbol: seed.symbol, crayon: seed.crayon, kind: seed.kind, sortOrder: sortOrder, seedKey: seed.key)
+        category.isInBudget = seed.isInBudget
+        if let mode = seed.hiddenIn { category.setHidden(true, in: mode) }
+        context.insert(category)
     }
 }
 
@@ -111,7 +151,7 @@ extension Store {
         trip.currencyCode = "JPY"
         context.insert(trip)
         ramen.trip = trip
-        add(612, .expense, seeded("travel"), daysAgo: 40, note: "Flight").trip = trip
+        add(612, .expense, seeded("flight"), daysAgo: 40).trip = trip
         return container
     }()
 }

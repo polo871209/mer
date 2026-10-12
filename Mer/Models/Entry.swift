@@ -66,6 +66,8 @@ final class EntryCategory {
     var sortOrder: Int = 0
     var seedKey: String?
     var isInBudget: Bool = true
+    var isHiddenEveryday: Bool = false
+    var isHiddenOnTrip: Bool = false
     @Relationship(deleteRule: .nullify, inverse: \Entry.category)
     var entries: [Entry]? = []
 
@@ -87,6 +89,42 @@ final class EntryCategory {
         get { Crayon(rawValue: crayonRaw) ?? .butter }
         set { crayonRaw = newValue.rawValue }
     }
+
+    func isHidden(in mode: CategoryMode) -> Bool {
+        switch mode {
+        case .everyday: isHiddenEveryday
+        case .trip: isHiddenOnTrip
+        }
+    }
+
+    func setHidden(_ isHidden: Bool, in mode: CategoryMode) {
+        switch mode {
+        case .everyday: isHiddenEveryday = isHidden
+        case .trip: isHiddenOnTrip = isHidden
+        }
+    }
+}
+
+nonisolated enum CategoryMode: CaseIterable, Identifiable {
+    case everyday, trip
+
+    init(trip: Trip?) {
+        self = trip == nil ? .everyday : .trip
+    }
+
+    var id: Self { self }
+
+    var title: LocalizedStringResource {
+        switch self {
+        case .everyday: "Everyday"
+        case .trip: "Trip"
+        }
+    }
+}
+
+extension [EntryCategory] {
+    func shown(in mode: CategoryMode) -> [EntryCategory] { filter { !$0.isHidden(in: mode) } }
+    func hidden(in mode: CategoryMode) -> [EntryCategory] { filter { $0.isHidden(in: mode) } }
 }
 
 nonisolated extension EntryCategory? {
