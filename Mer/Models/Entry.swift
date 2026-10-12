@@ -29,6 +29,7 @@ final class Entry {
     var date: Date = Date.now
     var category: EntryCategory?
     var trip: Trip?
+    @Attribute(.externalStorage) var receipt: Data?
 
     init(amount: Decimal, accountCode: String, kind: EntryKind, date: Date = .now, note: String = "") {
         self.amount = amount

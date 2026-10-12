@@ -55,6 +55,9 @@ Sign both devices in to the same Apple Account and install Mer from Xcode on eac
 3. Make sure that Settings > Categories shows each built-in category once on both devices.
 4. Add a trip in Settings > Trips on the first device and tap Start Trip. Make sure that the second device shows Mer in the travel hat and the trip card on Home.
 5. Turn on the budget in Settings > Budget on the first device, set an amount, and turn off one category. Make sure that the second device shows the same amount, the same category turned off, and the budget card on Home.
+6. On the first device, add an entry, tap the receipt button, and pick Take Photo. Make sure that Mer asks for camera access once, and that View Receipt shows the photo after you save. Make sure that the second device shows the same receipt in that entry.
+7. On the second device, pick Share Receipt in that entry, then Save Image. Make sure that Mer asks for photo library access once and that the photo shows in Photos. Share it again with Save to Files, and make sure that Files shows `Receipt.jpg`.
+8. On the second device, pick Remove Receipt in that entry and save. Make sure that the first device shows no receipt.
 
 ## 6. Deploy the CloudKit schema to production
 

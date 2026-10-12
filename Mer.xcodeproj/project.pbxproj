@@ -385,7 +385,9 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Mer;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Mer uses the camera to take photos of your receipts.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Mer uses Face ID to lock your money notes.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Mer saves receipt photos to your photo library when you ask it to.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -418,7 +420,9 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Mer;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Mer uses the camera to take photos of your receipts.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Mer uses Face ID to lock your money notes.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Mer saves receipt photos to your photo library when you ask it to.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;

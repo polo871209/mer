@@ -75,6 +75,9 @@
     "Asks to end the trip" : {
 
     },
+    "Attached" : {
+
+    },
     "Average spent per day" : {
 
     },
@@ -109,6 +112,9 @@
 
     },
     "Change Currency" : {
+
+    },
+    "Choose Photo" : {
 
     },
     "Claim" : {
@@ -503,10 +509,19 @@
     "Privacy Policy" : {
 
     },
+    "Receipt" : {
+
+    },
+    "Receipt photo" : {
+
+    },
     "Recent" : {
 
     },
     "Remove" : {
+
+    },
+    "Remove Receipt" : {
 
     },
     "Removed" : {
@@ -537,6 +552,9 @@
 
     },
     "Settings" : {
+
+    },
+    "Share Receipt" : {
 
     },
     "Shopping" : {
@@ -612,6 +630,9 @@
     "Symbol" : {
 
     },
+    "Take Photo" : {
+
+    },
     "Tangerine" : {
 
     },
@@ -685,6 +706,9 @@
 
     },
     "Until %@" : {
+
+    },
+    "View Receipt" : {
 
     },
     "Which category?" : {
