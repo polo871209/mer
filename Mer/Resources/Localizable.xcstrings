@@ -75,6 +75,9 @@
     "Asks to end the trip" : {
 
     },
+    "Attached" : {
+
+    },
     "Average spent per day" : {
 
     },
@@ -112,6 +115,9 @@
 
     },
     "Change Currency" : {
+
+    },
+    "Choose Photo" : {
 
     },
     "Claim" : {
@@ -223,6 +229,9 @@
 
     },
     "Export CSV" : {
+
+    },
+    "Export Receipts" : {
 
     },
     "Flight" : {
@@ -503,10 +512,19 @@
     "Privacy" : {
 
     },
+    "Receipt" : {
+
+    },
+    "Receipt photo" : {
+
+    },
     "Recent" : {
 
     },
     "Remove" : {
+
+    },
+    "Remove Receipt" : {
 
     },
     "Removed" : {
@@ -537,6 +555,12 @@
 
     },
     "Settings" : {
+
+    },
+    "Share Receipt" : {
+
+    },
+    "Shares every receipt on this trip as one zip file." : {
 
     },
     "Shopping" : {
@@ -612,6 +636,9 @@
     "Symbol" : {
 
     },
+    "Take Photo" : {
+
+    },
     "Tangerine" : {
 
     },
@@ -685,6 +712,9 @@
 
     },
     "Until %@" : {
+
+    },
+    "View Receipt" : {
 
     },
     "Which category?" : {

@@ -34,6 +34,11 @@ struct TripDashboard: View {
                     DailyCard(days: chartDays, interval: chartInterval, source: .trip(trip.uuid))
                 }
                 RecentCard(entries: Array(entries.prefix(5))) { TripEntries(trip: trip) }
+                if trip.hasReceipts {
+                    ReceiptsShareLink(trip: trip)
+                        .font(.crayon(16, relativeTo: .body))
+                        .buttonStyle(.glass)
+                }
             }
             .padding(.horizontal)
             .padding(.bottom, 24)

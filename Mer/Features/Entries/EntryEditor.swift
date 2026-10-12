@@ -47,6 +47,7 @@ struct EntryEditor: View {
     @State private var note: String
     @State private var date: Date
     @State private var trip: Trip?
+    @State private var receipt: Data?
     @FocusState private var isEditingNote: Bool
 
     init(_ draft: EntryDraft) {
@@ -65,6 +66,7 @@ struct EntryEditor: View {
         _note = State(initialValue: entry?.note ?? (claim == nil ? "" : String(localized: "Claim")))
         _date = State(initialValue: entry?.date ?? .now)
         _trip = State(initialValue: entry?.trip ?? presetTrip)
+        _receipt = State(initialValue: entry?.receipt)
     }
 
     private var choices: [EntryCategory] { categories.filter { $0.kind == kind } }
@@ -111,8 +113,11 @@ struct EntryEditor: View {
                     if isEditingNote {
                         Button("Done") { isEditingNote = false }
                             .font(.crayon(17, relativeTo: .body))
-                    } else if !trips.isEmpty {
-                        TripField(trips: trips, selection: $trip)
+                    } else {
+                        ReceiptField(receipt: $receipt)
+                        if !trips.isEmpty {
+                            TripField(trips: trips, selection: $trip)
+                        }
                     }
                 }
 
@@ -191,6 +196,7 @@ struct EntryEditor: View {
         target.note = trimmedNote
         target.category = category
         target.date = date
+        if target.receipt != receipt { target.receipt = receipt }
         try? context.save()
     }
 }

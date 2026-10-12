@@ -59,6 +59,13 @@ struct TripEditor: View {
                 } footer: {
                     Text("Trip mode turns on at the start date and off after the end date. Entries on any date can join the trip.")
                 }
+                if let trip, trip.hasReceipts {
+                    Section {
+                        ReceiptsShareLink(trip: trip)
+                    } footer: {
+                        Text("Shares every receipt on this trip as one zip file.")
+                    }
+                }
             }
             .foregroundStyle(Palette.ink)
             .paperBackground()
