@@ -7,6 +7,7 @@ struct CategoryWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: "Categories", intent: CategoryWidgetConfiguration.self, provider: CategoryProvider()) {
             CategoryWidgetView(categories: $0.categories)
+                .environment(\.colorScheme, .light)
         }
         .configurationDisplayName("Quick Add")
         .description("Tap a category to type the amount.")
