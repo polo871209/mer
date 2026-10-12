@@ -13,6 +13,7 @@ struct DashboardView: View {
             Group {
                 if let trip = currentTripID.flatMap({ context.model(for: $0) as? Trip }) {
                     TripDashboard(trip: trip)
+                        .toolbarVisibility(.hidden, for: .navigationBar)
                 } else {
                     ScrollView {
                         VStack(spacing: 18) {
@@ -22,10 +23,11 @@ struct DashboardView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 24)
                     }
+                    .toolbarVisibility(.hidden, for: .navigationBar)
+                    .searchesEntries()
                     .paperBackground()
                 }
             }
-            .toolbarVisibility(.hidden, for: .navigationBar)
         }
         .followsCurrentPeriod($month, period: .month)
     }

@@ -297,6 +297,16 @@
     "Income" : {
 
     },
+    "Income %@ · Spent %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Income %1$@ · Spent %2$@"
+          }
+        }
+      }
+    },
     "Investment" : {
 
     },

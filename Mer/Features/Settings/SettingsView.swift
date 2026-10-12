@@ -70,6 +70,10 @@ struct SettingsView: View {
                         Label("Export CSV", systemImage: "square.and.arrow.up")
                     }
                     .disabled(entries.isEmpty)
+                    #if DEBUG
+                    EraseAllButton()
+                        .disabled(entries.isEmpty)
+                    #endif
                 }
             }
             .paperBackground()
@@ -131,6 +135,46 @@ private struct ImportResult {
         }
     }
 }
+
+#if DEBUG
+private struct EraseAllButton: View {
+    @State private var isConfirming = false
+    @State private var failure: String?
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        Button("Erase All Entries", systemImage: "trash", role: .destructive) { isConfirming = true }
+            .confirmationDialog("Erase all entries and trips?", isPresented: $isConfirming, titleVisibility: .visible) {
+                Button("Erase All", role: .destructive) { erase() }
+            } message: {
+                Text("Every device that syncs with your iCloud loses them too.")
+            }
+            .alert(
+                "Erase Failed",
+                isPresented: Binding {
+                    failure != nil
+                } set: {
+                    if !$0 { failure = nil }
+                }
+            ) {
+            } message: {
+                Text(failure ?? "")
+            }
+    }
+
+    private func erase() {
+        do {
+            for entry in try context.fetch(FetchDescriptor<Entry>()) { context.delete(entry) }
+            for trip in try context.fetch(FetchDescriptor<Trip>()) { context.delete(trip) }
+            try context.save()
+            Haptics.saved()
+        } catch {
+            context.rollback()
+            failure = error.localizedDescription
+        }
+    }
+}
+#endif
 
 nonisolated struct EntriesCSV: Transferable {
     static var transferRepresentation: some TransferRepresentation {

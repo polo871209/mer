@@ -31,7 +31,7 @@ struct ReportView: View {
                     PeriodPicker(period: period, date: $date)
                 }
                 .padding(.horizontal)
-                ReportContent(account: account, period: period, interval: period.interval(containing: date))
+                ReportContent(account: account, period: period, date: $date)
             }
             .padding(.top, 8)
             .padding(.bottom, 24)
@@ -57,16 +57,19 @@ private enum ReportPage: CaseIterable, Identifiable {
 private struct ReportContent: View {
     let account: String
     let period: Period
+    @Binding var date: Date
     let interval: DateInterval
     @Query private var entries: [Entry]
     @State private var page: ReportPage? = .categories
     @State private var pageHeights: [ReportPage: CGFloat] = [:]
 
-    init(account: String, period: Period, interval: DateInterval) {
+    init(account: String, period: Period, date: Binding<Date>) {
+        let interval = period.interval(containing: date.wrappedValue)
         let start = interval.start
         let end = interval.end
         self.account = account
         self.period = period
+        _date = date
         self.interval = interval
         _entries = Query(
             filter: #Predicate<Entry> { $0.accountCode == account && $0.date >= start && $0.date < end && $0.trip == nil },
@@ -78,6 +81,7 @@ private struct ReportContent: View {
         let summary = PeriodSummary(entries: entries)
         VStack(spacing: 14) {
             TotalsCard(summary: summary)
+                .swipesPeriod(period, date: $date)
                 .padding(.horizontal)
             PageDots(page: $page)
             ScrollView(.horizontal) {
@@ -137,28 +141,29 @@ private struct TotalsCard: View {
     @Environment(\.currencyCode) private var code
 
     var body: some View {
-        HStack(alignment: .top) {
-            total("Income", summary.income.money(code), color: Palette.income)
-            total("Spent", summary.expense.money(code), color: Palette.ink)
-            total("Balance", summary.balance.signedMoney(code), color: summary.balance < 0 ? Palette.expense : Palette.income)
+        VStack(spacing: 8) {
+            total("Income", summary.income.money(code), color: Palette.income, size: 17)
+            total("Spent", summary.expense.money(code), color: Palette.ink, size: 17)
+            Divider().overlay(Palette.pencil.opacity(0.4))
+            total("Balance", summary.balance.signedMoney(code), color: summary.balance < 0 ? Palette.expense : Palette.income, size: 22)
         }
-        .sketchyCard(seed: 31, padding: 12)
+        .sketchyCard(seed: 31, padding: 14)
         .animation(.snappy, value: summary.balance)
     }
 
-    private func total(_ title: LocalizedStringKey, _ value: String, color: Color) -> some View {
-        VStack(spacing: 4) {
+    private func total(_ title: LocalizedStringKey, _ value: String, color: Color, size: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(title)
-                .font(.crayon(13, relativeTo: .caption, bold: false))
+                .font(.crayon(15, relativeTo: .subheadline, bold: false))
                 .foregroundStyle(Palette.pencil)
+            Spacer(minLength: 0)
             Text(value)
-                .font(.crayon(17, relativeTo: .headline))
+                .font(.crayon(size, relativeTo: .headline))
                 .foregroundStyle(color)
                 .lineLimit(1)
-                .minimumScaleFactor(0.5)
+                .minimumScaleFactor(0.6)
                 .contentTransition(.numericText())
         }
-        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
     }
 }

@@ -15,12 +15,15 @@ struct TrendPage: View {
 
     init(account: String, period: Period, interval: DateInterval, spent: Decimal) {
         let range = TrendBucket.range(for: period, containing: interval.start)
+        let start = range.start
         let end = range.end
         self.period = period
         self.interval = interval
         self.spent = spent
         self.range = range
-        var descriptor = FetchDescriptor<Entry>(predicate: #Predicate { $0.accountCode == account && $0.date < end && $0.trip == nil })
+        var descriptor = FetchDescriptor<Entry>(
+            predicate: #Predicate { $0.accountCode == account && $0.date >= start && $0.date < end && $0.trip == nil }
+        )
         descriptor.propertiesToFetch = [\.date, \.amount, \.kindRaw]
         _entries = Query(descriptor)
     }
@@ -30,16 +33,17 @@ struct TrendPage: View {
             MerEmptyState(title: "No entries", message: "Log some money in or out to see the trend.")
                 .padding(.top, 24)
         } else {
+            let buckets = TrendBucket.buckets(for: entries, period: period, range: range)
             VStack(spacing: 18) {
-                chart
+                chart(buckets)
                 average
+                totals(buckets)
             }
         }
     }
 
-    private var chart: some View {
-        let buckets = TrendBucket.buckets(for: entries, period: period, range: range)
-        return VStack(alignment: .leading, spacing: 14) {
+    private func chart(_ buckets: [TrendBucket]) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
             Text(period.trendTitle).cardTitle()
             legend
             Chart(buckets) { bucket in
@@ -129,6 +133,32 @@ struct TrendPage: View {
         .sketchyCard(seed: 35, padding: 14)
     }
 
+    private func totals(_ buckets: [TrendBucket]) -> some View {
+        VStack(spacing: 12) {
+            ForEach(buckets.reversed()) { bucket in
+                let net = bucket.income - bucket.expense
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(period.label(for: bucket.start))
+                            .font(.body.weight(.medium))
+                        Text("Income \(bucket.income.money(code)) · Spent \(bucket.expense.money(code))")
+                            .font(.caption)
+                            .foregroundStyle(Palette.pencil)
+                    }
+                    Spacer(minLength: 8)
+                    Text(net.signedMoney(code))
+                        .font(.crayon(17, relativeTo: .body))
+                        .foregroundStyle(net < 0 ? Palette.expense : Palette.income)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+                .foregroundStyle(Palette.ink)
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .sketchyCard(seed: 36)
+    }
+
     private var averageSpent: Decimal {
         let calendar = Calendar.current
         let unit = period.averageUnit
@@ -171,6 +201,7 @@ private struct BalanceLine: View {
 
 private struct TrendBucket: Identifiable {
     let id: Int
+    let start: Date
     let label: String
     var income = Decimal.zero
     var expense = Decimal.zero
@@ -190,17 +221,12 @@ private struct TrendBucket: Identifiable {
     ) -> [TrendBucket] {
         var buckets = (0..<period.trendCount).map { offset in
             let date = calendar.date(byAdding: period.unit, value: offset, to: range.start) ?? range.start
-            return TrendBucket(id: offset, label: period.bucketLabel(for: date))
+            return TrendBucket(id: offset, start: date, label: period.bucketLabel(for: date))
         }
         let index = { (date: Date) in
             calendar.dateComponents([period.unit], from: range.start, to: date).value(for: period.unit) ?? -1
         }
-        var opening = Decimal.zero
         for entry in entries {
-            guard entry.date >= range.start else {
-                opening += entry.signedAmount
-                continue
-            }
             let position = index(entry.date)
             guard buckets.indices.contains(position) else { continue }
             switch entry.kind {
@@ -208,7 +234,7 @@ private struct TrendBucket: Identifiable {
             case .expense: buckets[position].expense += entry.amount
             }
         }
-        var running = opening
+        var running = Decimal.zero
         for position in buckets.indices {
             running += buckets[position].income - buckets[position].expense
             buckets[position].balance = running

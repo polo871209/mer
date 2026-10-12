@@ -32,8 +32,9 @@ struct PeriodPicker: View {
             Button(period.nextTitle, systemImage: "chevron.right") {
                 shift(by: 1)
             }
-            .disabled(!allowsFuture && Calendar.current.isDate(date, equalTo: .now, toGranularity: period.unit))
+            .disabled(!period.canShift(date, by: 1, allowsFuture: allowsFuture))
         }
+        .swipesPeriod(period, date: $date, allowsFuture: allowsFuture)
         .labelStyle(.iconOnly)
         .buttonStyle(.glass)
         .buttonBorderShape(.circle)
@@ -50,13 +51,35 @@ struct PeriodPicker: View {
     }
 
     private func shift(by count: Int) {
-        withAnimation(.snappy) {
-            date = Calendar.current.date(byAdding: period.unit, value: count, to: date) ?? date
-        }
+        period.shift($date, by: count)
+    }
+}
+
+extension View {
+    func swipesPeriod(_ period: Period, date: Binding<Date>, allowsFuture: Bool = false) -> some View {
+        contentShape(.rect).simultaneousGesture(
+            DragGesture(minimumDistance: 24).onEnded { value in
+                let width = value.translation.width
+                guard abs(width) > abs(value.translation.height) * 2 else { return }
+                let count = width < 0 ? 1 : -1
+                guard period.canShift(date.wrappedValue, by: count, allowsFuture: allowsFuture) else { return }
+                period.shift(date, by: count)
+            }
+        )
     }
 }
 
 extension Period {
+    fileprivate func canShift(_ date: Date, by count: Int, allowsFuture: Bool) -> Bool {
+        count < 0 || allowsFuture || !Calendar.current.isDate(date, equalTo: .now, toGranularity: unit)
+    }
+
+    fileprivate func shift(_ date: Binding<Date>, by count: Int) {
+        withAnimation(.snappy) {
+            date.wrappedValue = Calendar.current.date(byAdding: unit, value: count, to: date.wrappedValue) ?? date.wrappedValue
+        }
+    }
+
     fileprivate var previousTitle: LocalizedStringKey {
         switch self {
         case .month: "Previous Month"
