@@ -139,6 +139,7 @@ struct AddEntryIntent: AppIntent {
         entry.setAmount(typed, currency: currency, accountAmount: accountAmount, account: account, trip: trip)
         entry.category = match
         try context.save()
+        BudgetSnapshot.refresh(in: context)
         return .result(dialog: dialog(for: entry, typed: typed.money(currency)), view: EntryRow(entry: entry).padding())
     }
 
