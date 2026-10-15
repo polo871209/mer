@@ -44,9 +44,15 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				App/DeepLink.swift,
+				DesignSystem/Components/BudgetDetail.swift,
 				DesignSystem/Components/CategoryBadge.swift,
+				DesignSystem/Components/MerAvatar.swift,
 				DesignSystem/Theme/Palette.swift,
 				DesignSystem/Theme/Sketchy.swift,
+				Models/Budget.swift,
+				Models/Money.swift,
+				Models/Period.swift,
+				Persistence/BudgetSnapshot.swift,
 				Persistence/CategoryShortcut.swift,
 				Persistence/DefaultsKey.swift,
 				Resources/Assets.xcassets,

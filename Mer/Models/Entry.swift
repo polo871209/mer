@@ -27,6 +27,7 @@ final class Entry {
     var kindRaw: String = EntryKind.expense.rawValue
     var note: String = ""
     var date: Date = Date.now
+    var createdAt: Date?
     var category: EntryCategory?
     var trip: Trip?
     @Attribute(.externalStorage) var receipt: Data?
@@ -37,6 +38,7 @@ final class Entry {
         self.kindRaw = kind.rawValue
         self.date = date
         self.note = note
+        self.createdAt = .now
     }
 
     var kind: EntryKind {

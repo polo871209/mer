@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 struct MerAvatar: View {
@@ -13,4 +14,8 @@ struct MerAvatar: View {
             .overlay { SketchyEllipse(seed: 4).stroke(Palette.ink, lineWidth: 2.2) }
             .accessibilityLabel("Mer the cat")
     }
+}
+
+extension EnvironmentValues {
+    @Entry var currentTripID: PersistentIdentifier?
 }

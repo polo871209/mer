@@ -33,7 +33,7 @@ struct TripDashboard: View {
                 if !chartDays.isEmpty {
                     DailyCard(days: chartDays, interval: chartInterval, source: .trip(trip.uuid))
                 }
-                RecentCard(entries: Array(entries.prefix(5))) { TripEntries(trip: trip) }
+                RecentCard(entries: entries) { TripEntries(trip: trip) }
                 if trip.hasReceipts {
                     ReceiptsShareLink(trip: trip)
                         .font(.crayon(16, relativeTo: .body))

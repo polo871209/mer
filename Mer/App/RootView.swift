@@ -57,6 +57,7 @@ struct RootView: View {
         .modifier(CloudSync())
         .modifier(CurrentTripSync())
         .modifier(WidgetCategorySync())
+        .modifier(WidgetBudgetSync())
         .modifier(AppLockModifier())
     }
 

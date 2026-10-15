@@ -70,10 +70,6 @@ extension Sequence<Trip> {
     }
 }
 
-extension EnvironmentValues {
-    @Entry var currentTripID: PersistentIdentifier?
-}
-
 extension Entry {
     @MainActor func amount(in mainCode: String) -> (value: Decimal, isApproximate: Bool) {
         if accountCode == mainCode { return (amount, false) }

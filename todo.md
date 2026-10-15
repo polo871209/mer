@@ -33,6 +33,10 @@ In the default categories, Home is now Rent, Mer is now Pets, and School is new.
 4. Long-press the widget, pick Edit Widget, and choose four other categories, including one income category. Make sure that the widget shows them, and that a tap on the income category opens the keypad on Income.
 5. Change the icon of a category in Settings > Categories. Make sure that the widget shows the new icon.
 6. Turn on the app lock, send Mer to the background, and tap a category. Make sure that the keypad shows with that category after you unlock.
+7. Turn off the budget in Settings > Budget. Long-press the widget and pick the medium size. Make sure that the same four icons show on the left, and that the right side shows the Mer face with "No budget set" under it.
+8. Turn on the budget. Make sure that a ring shows around the Mer face, that the colored part matches the share of the budget used on the Home tab, that its color matches the Home budget bar, and that the text under it reads "On track", "Almost at budget", "Budget used up", or "Over budget".
+9. Say "Log Food in Mer" with Mer closed and give an amount. Make sure that the colored part of the ring grows.
+10. Turn on Dark Mode in Settings > Display & Brightness. Long-press the Home Screen, pick Edit > Customize, and pick Dark. Make sure that the small and medium widgets keep the light paper background and dark ink.
 
 ## 4. Test Siri
 
