@@ -1,16 +1,25 @@
+import CoreData
 import Foundation
 import SwiftData
 
 enum Store {
+    private static let models: [any PersistentModel.Type] = [Entry.self, EntryCategory.self, Trip.self]
+
     static let shared: ModelContainer = {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-sampleData") { return preview }
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-sampleData") { return preview }
+        if arguments.contains("-initializeCloudKitSchema") {
+            initializeCloudKitSchema()
+            print("Initialized the CloudKit development schema")
+            exit(0)
+        }
         #endif
         return make(inMemory: false)
     }()
 
     static func make(inMemory: Bool) -> ModelContainer {
-        let schema = Schema([Entry.self, EntryCategory.self, Trip.self])
+        let schema = Schema(models)
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory, cloudKitDatabase: inMemory ? .none : .automatic)
         do {
             let container = try ModelContainer(for: schema, configurations: configuration)
@@ -21,6 +30,29 @@ enum Store {
             fatalError("Could not open the Mer store: \(error)")
         }
     }
+
+    #if DEBUG
+    // Adapted from https://developer.apple.com/documentation/swiftdata/syncing-model-data-across-a-persons-devices
+    private static func initializeCloudKitSchema() {
+        guard let model = NSManagedObjectModel.makeManagedObjectModel(for: models) else { fatalError("Could not build the Core Data model") }
+        let description = NSPersistentStoreDescription(url: URL.temporaryDirectory.appending(path: "CloudKitSchema.store"))
+        description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.polo.Mer")
+        description.shouldAddStoreAsynchronously = false
+        let container = NSPersistentCloudKitContainer(name: "CloudKitSchema", managedObjectModel: model)
+        container.persistentStoreDescriptions = [description]
+        container.loadPersistentStores { _, error in
+            if let error { fatalError("Could not open the schema store: \(error)") }
+        }
+        do {
+            try container.initializeCloudKitSchema()
+            for store in container.persistentStoreCoordinator.persistentStores {
+                try container.persistentStoreCoordinator.remove(store)
+            }
+        } catch {
+            fatalError("Could not initialize the CloudKit schema: \(error)")
+        }
+    }
+    #endif
 
     static func mergeDuplicateCategories(in context: ModelContext) {
         let seeded = FetchDescriptor<EntryCategory>(predicate: #Predicate { $0.seedKey != nil })
