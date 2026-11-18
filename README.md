@@ -6,4 +6,8 @@
 
 <p align="center">It's Mer's money. You just carry it.</p>
 
+<p align="center">
+  <a href="https://apps.apple.com/tw/app/mer/id6821771014"><img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" height="48" alt="Download on the App Store" /></a>
+</p>
+
 Mer is a personal iPhone app for tracking expenses and income. Mer, a cat drawn in crayon, keeps the books and tells you how the month is going. Your entries stay in your iCloud account and sync between your devices.
