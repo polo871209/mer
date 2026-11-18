@@ -207,18 +207,14 @@ private struct TrendBucket: Identifiable {
     var expense = Decimal.zero
     var balance = Decimal.zero
 
-    static func range(for period: Period, containing date: Date, calendar: Calendar = .current) -> DateInterval {
-        let current = period.interval(containing: date, calendar: calendar)
-        let start = calendar.date(byAdding: period.unit, value: 1 - period.trendCount, to: current.start) ?? current.start
+    static func range(for period: Period, containing date: Date) -> DateInterval {
+        let current = period.interval(containing: date)
+        let start = Calendar.current.date(byAdding: period.unit, value: 1 - period.trendCount, to: current.start) ?? current.start
         return DateInterval(start: start, end: current.end)
     }
 
-    static func buckets(
-        for entries: [Entry],
-        period: Period,
-        range: DateInterval,
-        calendar: Calendar = .current
-    ) -> [TrendBucket] {
+    static func buckets(for entries: [Entry], period: Period, range: DateInterval) -> [TrendBucket] {
+        let calendar = Calendar.current
         var buckets = (0..<period.trendCount).map { offset in
             let date = calendar.date(byAdding: period.unit, value: offset, to: range.start) ?? range.start
             return TrendBucket(id: offset, start: date, label: period.bucketLabel(for: date))

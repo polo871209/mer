@@ -1,6 +1,5 @@
 import Foundation
 
-/// A description
 nonisolated enum DefaultsKey {
     static let mainCurrency = "currencyCode"
     static let otherCurrencies = "otherCurrencies"

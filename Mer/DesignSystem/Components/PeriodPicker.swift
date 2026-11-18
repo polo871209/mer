@@ -9,7 +9,7 @@ struct PeriodPicker: View {
     var body: some View {
         HStack {
             Button(period.previousTitle, systemImage: "chevron.left") {
-                shift(by: -1)
+                period.shift($date, by: -1)
             }
             Spacer()
             if let titleAction {
@@ -30,7 +30,7 @@ struct PeriodPicker: View {
             }
             Spacer()
             Button(period.nextTitle, systemImage: "chevron.right") {
-                shift(by: 1)
+                period.shift($date, by: 1)
             }
             .disabled(!period.canShift(date, by: 1, allowsFuture: allowsFuture))
         }
@@ -48,10 +48,6 @@ struct PeriodPicker: View {
             .lineLimit(1)
             .minimumScaleFactor(0.6)
             .contentTransition(.numericText())
-    }
-
-    private func shift(by count: Int) {
-        period.shift($date, by: count)
     }
 }
 
